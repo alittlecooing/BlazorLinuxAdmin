@@ -12,15 +12,15 @@ Just a tool for :
 
 #### The TcpMaps helps people to build tcp tunnel easily, in a secure way. Current support 3 modes : ServerBandwidth/UDPPunching/RouterClientPort 
 
-![Screenshot](https://github.com/BlazorPlus/BlazorLinuxAdmin/raw/master/demoscreenshots/BlazorLinuxAdmin.png)
+![Screenshot](https://github.com/alittlecooing/BlazorLinuxAdmin/blob/master/demoscreenshots/BlazorLinuxAdmin-CPUMonitor.png)
 
-![Screenshot](https://github.com/BlazorPlus/BlazorLinuxAdmin/raw/master/demoscreenshots/BlazorLinuxAdmin-FileTree.png)
+![Screenshot](https://github.com/alittlecooing/BlazorLinuxAdmin/blob/master/demoscreenshots/BlazorLinuxAdmin-FileTree.png)
 
-![Screenshot](https://github.com/BlazorPlus/BlazorLinuxAdmin/raw/master/demoscreenshots/BlazorLinuxAdmin-ProcList.png)
+![Screenshot](https://github.com/alittlecooing/BlazorLinuxAdmin/blob/master/demoscreenshots/BlazorLinuxAdmin-GPIO.png)
 
-![Screenshot](https://github.com/BlazorPlus/BlazorLinuxAdmin/raw/master/demoscreenshots/BlazorLinuxAdmin-GPIO.png)
+![Screenshot](https://github.com/alittlecooing/BlazorLinuxAdmin/blob/master/demoscreenshots/BlazorLinuxAdmin-ProcList.png)
 
-![Screenshot](https://github.com/BlazorPlus/BlazorLinuxAdmin/raw/master/demoscreenshots/BlazorLinuxAdmin-CPUMonitor.png)
+![Screenshot](https://github.com/alittlecooing/BlazorLinuxAdmin/blob/master/demoscreenshots/BlazorLinuxAdmin.png)
 
 Progresss v0.0.9 - CPU Monitor
 
