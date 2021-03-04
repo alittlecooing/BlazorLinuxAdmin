@@ -11,7 +11,7 @@ namespace BlazorLinuxAdmin.Data
             "Freezing", "Bracing", "Chilly", "Cool", "Mild", "Warm", "Balmy", "Hot", "Sweltering", "Scorching"
         };
 
-        public Task<WeatherForecast[]> GetForecastAsync(DateTime startDate)
+        public Task<WeatherForecast[]> GetForecastAsync (DateTime startDate)
         {
             var rng = new Random();
             return Task.FromResult(Enumerable.Range(1, 5).Select(index => new WeatherForecast

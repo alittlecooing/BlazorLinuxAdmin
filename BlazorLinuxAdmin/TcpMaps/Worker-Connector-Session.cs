@@ -1,91 +1,80 @@
-﻿using Microsoft.AspNetCore.Hosting;
-using Microsoft.AspNetCore.SignalR.Protocol;
-using System;
-using System.Collections.Generic;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Net.Sockets;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace BlazorLinuxAdmin.TcpMaps
+﻿namespace BlazorLinuxAdmin.TcpMaps
 {
-	class TcpMapConnectorSession : TcpMapBaseSession
-	{
-		Stream _stream;
+    using System;
+    using System.IO;
+    using System.Threading;
+    using System.Threading.Tasks;
 
-		public TcpMapConnectorSession(Stream stream)
-		{
-			_stream = stream;
-		}
+    internal class TcpMapConnectorSession : TcpMapBaseSession
+    {
+        private readonly Stream _stream;
 
-		public async Task WorkAsync()
-		{
-			await WorkAsync(_stream);
-		}
+        public TcpMapConnectorSession (Stream stream) => this._stream = stream;
 
-		Stream _sread;
-		Stream _swrite;
+        public async Task WorkAsync () => await this.WorkAsync(this._stream);
 
-		protected override async Task<CommandMessage> ReadMessageAsync()
-		{
-			ReadAgain:
+        private Stream _sread;
+        private Stream _swrite;
 
-			CommandMessage msg;
-			var cts = new CancellationTokenSource();
-			_ = Task.Run(async delegate
-			{
-				if (await cts.Token.WaitForSignalSettedAsync(16000))
-					return;
-				try
-				{
-					await _swrite.WriteAsync(new CommandMessage("_ping_", "forread").Pack());
-				}
-				catch (Exception x)
-				{
-					OnError(x);
-				}
-			});
-			try
-			{
-				msg = await CommandMessage.ReadFromStreamAsync(_sread);
-			}
-			finally
-			{
-				cts.Cancel();
-			}
+        protected override async Task<CommandMessage> ReadMessageAsync ()
+        {
+        ReadAgain:
 
-			if (msg == null || msg.Name == "data")
-				return msg;
+            CommandMessage msg;
+            var cts = new CancellationTokenSource();
+            _ = Task.Run(async delegate
+            {
+                if (await cts.Token.WaitForSignalSettedAsync(16000))
+                {
+                    return;
+                }
 
-			//TcpMapService.LogMessage("ServerSession:get message " + msg);
+                try
+                {
+                    await this._swrite.WriteAsync(new CommandMessage("_ping_", "forread").Pack());
+                }
+                catch (Exception x)
+                {
+                    this.OnError(x);
+                }
+            });
+            try
+            {
+                msg = await CommandMessage.ReadFromStreamAsync(this._sread);
+            }
+            finally
+            {
+                cts.Cancel();
+            }
 
-			switch (msg.Name)
-			{
-				case "_ping_":
-					await _swrite.WriteAsync(new CommandMessage("_ping_result_").Pack());
-					break;
-				case "_ping_result_":
-					break;
-				default:
-					TcpMapService.LogMessage("Error: 3 Ignore message " + msg);
-					break;
-			}
-			goto ReadAgain;
-		}
+            if (msg == null || msg.Name == "data")
+            {
+                return msg;
+            }
 
-		protected override async Task WriteMessageAsync(CommandMessage msg)
-		{
-			await _swrite.WriteAsync(msg.Pack());
-		}
+            //TcpMapService.LogMessage("ServerSession:get message " + msg);
 
+            switch (msg.Name)
+            {
+                case "_ping_":
+                    await this._swrite.WriteAsync(new CommandMessage("_ping_result_").Pack());
+                    break;
+                case "_ping_result_":
+                    break;
+                default:
+                    TcpMapService.LogMessage("Error: 3 Ignore message " + msg);
+                    break;
+            }
+            goto ReadAgain;
+        }
 
-		public async Task DirectWorkAsync(Stream sread,Stream swrite)
-		{
-			_sread = sread;
-			_swrite = swrite;
-			await WorkAsync();
-		}
-	}
+        protected override async Task WriteMessageAsync (CommandMessage msg) => await this._swrite.WriteAsync(msg.Pack());
+
+        public async Task DirectWorkAsync (Stream sread, Stream swrite)
+        {
+            this._sread = sread;
+            this._swrite = swrite;
+            await this.WorkAsync();
+        }
+    }
 }

@@ -1,28 +1,27 @@
-﻿using System;
-using System.Collections.Generic;
-using Microsoft.AspNetCore.Components.Rendering;
+﻿using System.Collections.Generic;
 using System.Reflection;
+using Microsoft.AspNetCore.Components.Rendering;
 
 namespace Microsoft.AspNetCore.Components   //use this namepace so copy/paste this code easier
 {
 
     public class KeepPageStateRouteView : RouteView
     {
-        protected override void Render(RenderTreeBuilder builder)
+        protected override void Render (RenderTreeBuilder builder)
         {
-            var layoutType = RouteData.PageType.GetCustomAttribute<LayoutAttribute>()?.LayoutType ?? DefaultLayout;
+            var layoutType = this.RouteData.PageType.GetCustomAttribute<LayoutAttribute>()?.LayoutType ?? this.DefaultLayout;
             builder.OpenComponent<LayoutView>(0);
             builder.AddAttribute(1, "Layout", layoutType);
-            builder.AddAttribute(2, "ChildContent", (RenderFragment)CreateBody());
+            builder.AddAttribute(2, "ChildContent", this.CreateBody());
             builder.CloseComponent();
         }
 
-        RenderFragment CreateBody()
+        private RenderFragment CreateBody ()
         {
-            var pagetype = RouteData.PageType;
-            var routeValues = RouteData.RouteValues;
+            var pagetype = this.RouteData.PageType;
+            var routeValues = this.RouteData.RouteValues;
 
-            void RenderForLastValue(RenderTreeBuilder builder)
+            void RenderForLastValue (RenderTreeBuilder builder)
             {
                 //dont reference RouteData again
 

@@ -1,21 +1,14 @@
 using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
-using Microsoft.AspNetCore;
 using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.Hosting;
-using Microsoft.Extensions.Logging;
 
 namespace BlazorLinuxAdmin
 {
     public class Program
     {
-        static string pname;
+        private static string pname;
 
-        public static void Main(string[] args)
+        public static void Main (string[] args)
         {
             pname = System.Diagnostics.Process.GetCurrentProcess().ProcessName;
             Console.WriteLine("Process Name : " + pname);
@@ -23,20 +16,32 @@ namespace BlazorLinuxAdmin
             CreateHostBuilder(args).Build().Run();
         }
 
-        static public bool IsKestrelMode()
+        public static bool IsKestrelMode ()
         {
             if (pname == "w3wp" || pname == "iisexpress")//IIS or IIS Express
+            {
                 return false;
+            }
+
             if (pname == "dotnet")  //run directly
+            {
                 return true;
+            }
+
             if (Environment.OSVersion.Platform == PlatformID.Unix)
+            {
                 return true;
+            }
+
             if (pname == typeof(Program).Assembly.GetName().Name)
+            {
                 return true;
+            }
+
             return false;
         }
 
-        public static IHostBuilder CreateHostBuilder(string[] args) =>
+        public static IHostBuilder CreateHostBuilder (string[] args) =>
             Host.CreateDefaultBuilder(args)
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
