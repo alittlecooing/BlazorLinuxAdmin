@@ -22,7 +22,7 @@
         {
             try
             {
-                byte[] buffer = new byte[TcpMapService.DefaultBufferSize];//TODO:const
+                byte[] buffer = new byte[TcpMapService.defaultBufferSize];//TODO:const
                 while (true)
                 {
                     //TcpMapService.LogMessage(this.GetType().Name + " ReadAsync");

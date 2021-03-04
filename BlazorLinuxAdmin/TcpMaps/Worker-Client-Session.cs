@@ -14,12 +14,12 @@
 
         public bool IsConnected { get; set; }
 
-        private Socket _sock_local;   //Client
-        private Socket _sock_server; //Server
-        private CancellationTokenSource _cts_connect;
-        private CancellationTokenSource _cts_upgrade;
-        private Stream _sread, _swrite;
-        private DateTime _lastwritetime = DateTime.Now;
+        private Socket sock_local;   //Client
+        private Socket sock_server; //Server
+        private CancellationTokenSource cts_connect;
+        private CancellationTokenSource cts_upgrade;
+        private Stream sread, swrite;
+        private DateTime lastwritetime = DateTime.Now;
 
         public TcpMapClientSession (TcpMapClient client, string sid)
         {
@@ -29,9 +29,9 @@
 
         public async Task StartAsync ()
         {
-            this._sock_local = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-            this._sock_local.InitTcp();
-            await this._sock_local.ConnectWithTimeoutAsync(this.Client.ClientHost, this.Client.ClientPort, 12000);
+            this.sock_local = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+            this.sock_local.InitTcp();
+            await this.sock_local.ConnectWithTimeoutAsync(this.Client.ClientHost, this.Client.ClientPort, 12000);
             _ = this.WorkAsync();
         }
 
@@ -40,15 +40,15 @@
             // _peer is NULL
             _ = this.WorkAsync();
 
-            this._cts_upgrade = new CancellationTokenSource();
-            while (this._cts_connect != null && !this._cts_connect.IsCancellationRequested)
+            this.cts_upgrade = new CancellationTokenSource();
+            while (this.cts_connect != null && !this.cts_connect.IsCancellationRequested)
             {
                 if (!string.IsNullOrEmpty(this.SessionId))
                 {
                     break;
                 }
 
-                if (await this._cts_upgrade.Token.WaitForSignalSettedAsync(9000))
+                if (await this.cts_upgrade.Token.WaitForSignalSettedAsync(9000))
                 {
                     break;
                 }
@@ -58,10 +58,10 @@
 
         public void Close ()
         {
-            this._cts_connect?.Cancel();
-            this._cts_upgrade?.Cancel();
-            this._sock_local?.CloseSocket();
-            this._sock_server?.CloseSocket();
+            this.cts_connect?.Cancel();
+            this.cts_upgrade?.Cancel();
+            this.sock_local?.CloseSocket();
+            this.sock_server?.CloseSocket();
         }
 
         private async Task WorkAsync ()
@@ -74,21 +74,21 @@
             {
                 int againTimeout = 125;
             StartAgain:
-                this._sock_server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                this._sock_server.InitTcp();
-                this._cts_connect = new CancellationTokenSource();
+                this.sock_server = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                this.sock_server.InitTcp();
+                this.cts_connect = new CancellationTokenSource();
                 try
                 {
-                    await this._sock_server.ConnectAsync(this.Client.ServerHost, 6022);
+                    await this.sock_server.ConnectAsync(this.Client.ServerHost, 6022);
 
                     //LogMessage("connected to 6022");
                 }
                 catch (Exception x)
                 {
                     this.OnError(x);
-                    this._sock_server.CloseSocket();
-                    this._sock_server = null;
-                    this._cts_connect = new CancellationTokenSource();
+                    this.sock_server.CloseSocket();
+                    this.sock_server = null;
+                    this.cts_connect = new CancellationTokenSource();
                     if (!this.IsStarted)
                     {
                         return;
@@ -99,7 +99,7 @@
                         againTimeout *= 2;
                     }
 
-                    if (await this._cts_connect.Token.WaitForSignalSettedAsync(againTimeout))
+                    if (await this.cts_connect.Token.WaitForSignalSettedAsync(againTimeout))
                     {
                         return;
                     }
@@ -129,15 +129,15 @@
                         arglist.Add(this.SessionId);//sessionid at [5]
                         connmsg.Args = arglist.ToArray();
 
-                        await this._sock_server.SendAsync(connmsg.Pack(), SocketFlags.None);
+                        await this.sock_server.SendAsync(connmsg.Pack(), SocketFlags.None);
 
                         //LogMessage("wait for conn msg");
 
-                        connmsg = await CommandMessage.ReadFromSocketAsync(this._sock_server);
+                        connmsg = await CommandMessage.ReadFromSocketAsync(this.sock_server);
 
                         if (connmsg == null)
                         {
-                            TcpMapService.LogMessage("no message ? Connected:" + this._sock_server.Connected);
+                            TcpMapService.LogMessage("no message ? Connected:" + this.sock_server.Connected);
                             return;
                         }
 
@@ -163,11 +163,11 @@
 
                     if (supportEncrypt)
                     {
-                        this.Client.License.OverrideStream(this._sock_server.CreateStream(), clientKeyIV, out this._sread, out this._swrite);
+                        this.Client.License.OverrideStream(this.sock_server.CreateStream(), clientKeyIV, out this.sread, out this.swrite);
                     }
                     else
                     {
-                        this._sread = this._swrite = this._sock_server.CreateStream();
+                        this.sread = this.swrite = this.sock_server.CreateStream();
                     }
 
                     if (string.IsNullOrEmpty(this.SessionId))
@@ -184,11 +184,11 @@
                                     return;
                                 }
 
-                                await this._swrite.WriteAsync(new CommandMessage("_ping_", "forread").Pack());
+                                await this.swrite.WriteAsync(new CommandMessage("_ping_", "forread").Pack());
                             });
                             try
                             {
-                                msg = await CommandMessage.ReadFromStreamAsync(this._sread);
+                                msg = await CommandMessage.ReadFromStreamAsync(this.sread);
                             }
                             finally
                             {
@@ -206,26 +206,26 @@
 
                                     try
                                     {
-                                        this._sock_local = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                                        this._sock_local.InitTcp();
-                                        await this._sock_local.ConnectWithTimeoutAsync(this.Client.ClientHost, this.Client.ClientPort, 12000);
+                                        this.sock_local = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                                        this.sock_local.InitTcp();
+                                        await this.sock_local.ConnectWithTimeoutAsync(this.Client.ClientHost, this.Client.ClientPort, 12000);
                                     }
                                     catch (Exception x)
                                     {
                                         TcpMapService.OnError(x);
-                                        await this._swrite.WriteAsync(new CommandMessage("UpgradeSessionResult", "Failed").Pack());
+                                        await this.swrite.WriteAsync(new CommandMessage("UpgradeSessionResult", "Failed").Pack());
                                         continue;
                                     }
                                     this.SessionId = msg.Args[0];
-                                    if (this._cts_upgrade != null)
+                                    if (this.cts_upgrade != null)
                                     {
-                                        this._cts_upgrade.Cancel();
+                                        this.cts_upgrade.Cancel();
                                     }
 
-                                    await this._swrite.WriteAsync(new CommandMessage("UpgradeSessionResult", "OK").Pack());
+                                    await this.swrite.WriteAsync(new CommandMessage("UpgradeSessionResult", "OK").Pack());
                                     break;
                                 case "_ping_":
-                                    await this._swrite.WriteAsync(new CommandMessage("_ping_result_").Pack());
+                                    await this.swrite.WriteAsync(new CommandMessage("_ping_result_").Pack());
                                     break;
                                 case "_ping_result_":
                                     break;
@@ -236,7 +236,7 @@
                         }
                     }
 
-                    await this.WorkAsync(this._sock_local.CreateStream());
+                    await this.WorkAsync(this.sock_local.CreateStream());
 
                 }
                 catch (Exception x)
@@ -255,24 +255,24 @@
 
             this.IsStarted = false;
             this.IsConnected = false;
-            this._sock_server?.CloseSocket();
-            this._sock_local?.CloseSocket();
-            this._workend = true;
+            this.sock_server?.CloseSocket();
+            this.sock_local?.CloseSocket();
+            this.workend = true;
         }
 
-        private bool _workend = false;
+        private bool workend = false;
 
-        internal bool ShallRecycle () => this._workend;
+        internal bool ShallRecycle () => this.workend;
 
         protected override async Task<CommandMessage> ReadMessageAsync ()
         {
         ReadAgain:
             CommandMessage msg;
             CancellationTokenSource cts = null;
-            if (DateTime.Now - this._lastwritetime > TimeSpan.FromMilliseconds(12000))
+            if (DateTime.Now - this.lastwritetime > TimeSpan.FromMilliseconds(12000))
             {
-                this._lastwritetime = DateTime.Now;
-                await this._swrite.WriteAsync(new CommandMessage("_ping_", "forwrite").Pack());
+                this.lastwritetime = DateTime.Now;
+                await this.swrite.WriteAsync(new CommandMessage("_ping_", "forwrite").Pack());
             }
             else
             {
@@ -284,13 +284,13 @@
                         return;
                     }
 
-                    this._lastwritetime = DateTime.Now;
-                    await this._swrite.WriteAsync(new CommandMessage("_ping_", "forread").Pack());
+                    this.lastwritetime = DateTime.Now;
+                    await this.swrite.WriteAsync(new CommandMessage("_ping_", "forread").Pack());
                 });
             }
             try
             {
-                msg = await CommandMessage.ReadFromStreamAsync(this._sread);
+                msg = await CommandMessage.ReadFromStreamAsync(this.sread);
             }
             finally
             {
@@ -310,7 +310,7 @@
             switch (msg.Name)
             {
                 case "_ping_":
-                    await this._swrite.WriteAsync(new CommandMessage("_ping_result_").Pack());
+                    await this.swrite.WriteAsync(new CommandMessage("_ping_result_").Pack());
                     break;
                 case "_ping_result_":
                     break;
@@ -323,8 +323,8 @@
 
         protected override async Task WriteMessageAsync (CommandMessage msg)
         {
-            this._lastwritetime = DateTime.Now;
-            await this._swrite.WriteAsync(msg.Pack());
+            this.lastwritetime = DateTime.Now;
+            await this.swrite.WriteAsync(msg.Pack());
         }
     }
 }

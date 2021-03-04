@@ -20,9 +20,9 @@
         public bool IsConnected { get; private set; }
 
         //System.Net.WebSockets.ClientWebSocket ws;
-        private Socket _socket;
-        private CancellationTokenSource _cts_connect;
-        private Stream _sread, _swrite;
+        private Socket socket;
+        private CancellationTokenSource cts_connect;
+        private Stream sread, swrite;
 
         public void StartWork ()
         {
@@ -50,21 +50,21 @@
                 int againTimeout = 125;
             StartAgain:
 
-                this._socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                this._socket.InitTcp();
-                this._cts_connect = new CancellationTokenSource();
+                this.socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
+                this.socket.InitTcp();
+                this.cts_connect = new CancellationTokenSource();
                 try
                 {
-                    await this._socket.ConnectAsync(this.Client.ServerHost, 6022);
+                    await this.socket.ConnectAsync(this.Client.ServerHost, 6022);
 
                     this.LogMessage("connected to 6022");
                 }
                 catch (Exception x)
                 {
                     this.OnError(x);
-                    this._socket.CloseSocket();
-                    this._socket = null;
-                    this._cts_connect = new CancellationTokenSource();
+                    this.socket.CloseSocket();
+                    this.socket = null;
+                    this.cts_connect = new CancellationTokenSource();
                     if (!this.IsStarted)
                     {
                         return;
@@ -72,10 +72,10 @@
 
                     if (againTimeout < 4)
                     {
-                        againTimeout = againTimeout * 2;
+                        againTimeout *= 2;
                     }
 
-                    if (await this._cts_connect.Token.WaitForSignalSettedAsync(againTimeout))
+                    if (await this.cts_connect.Token.WaitForSignalSettedAsync(againTimeout))
                     {
                         return;
                     }
@@ -89,27 +89,30 @@
                     byte[] clientKeyIV;
 
                     {
-                        CommandMessage connmsg = new CommandMessage();
-                        connmsg.Name = "ClientConnect";
-                        List<string> arglist = new List<string>();
-                        arglist.Add(this.Client.License.Key);
-                        arglist.Add(this.Client.ServerPort.ToString());
-                        byte[] encryptedKeyIV, sourceHash;
-                        this.Client.License.GenerateSecureKeyAndHash(out clientKeyIV, out encryptedKeyIV, out sourceHash);
+                        CommandMessage connmsg = new CommandMessage
+                        {
+                            Name = "ClientConnect"
+                        };
+                        List<string> arglist = new List<string>
+                        {
+                            this.Client.License.Key,
+                            this.Client.ServerPort.ToString()
+                        };
+                        this.Client.License.GenerateSecureKeyAndHash(out clientKeyIV, out byte[] encryptedKeyIV, out byte[] sourceHash);
                         arglist.Add(Convert.ToBase64String(encryptedKeyIV));
                         arglist.Add(Convert.ToBase64String(sourceHash));
                         arglist.Add(supportEncrypt ? "1" : "0");
                         connmsg.Args = arglist.ToArray();
 
-                        await this._socket.SendAsync(connmsg.Pack(), SocketFlags.None);
+                        await this.socket.SendAsync(connmsg.Pack(), SocketFlags.None);
 
                         //LogMessage("wait for conn msg");
 
-                        connmsg = await CommandMessage.ReadFromSocketAsync(this._socket);
+                        connmsg = await CommandMessage.ReadFromSocketAsync(this.socket);
 
                         if (connmsg == null)
                         {
-                            TcpMapService.LogMessage("no message ? Connected:" + this._socket.Connected);
+                            TcpMapService.LogMessage("no message ? Connected:" + this.socket.Connected);
                             return;
                         }
 
@@ -134,11 +137,11 @@
 
                     if (supportEncrypt)
                     {
-                        this.Client.License.OverrideStream(this._socket.CreateStream(), clientKeyIV, out this._sread, out this._swrite);
+                        this.Client.License.OverrideStream(this.socket.CreateStream(), clientKeyIV, out this.sread, out this.swrite);
                     }
                     else
                     {
-                        this._sread = this._swrite = this._socket.CreateStream();
+                        this.sread = this.swrite = this.socket.CreateStream();
                     }
 
                     for (int i = 0; i < Math.Min(5, this.Client.PreSessionCount); i++)//TODO:const of 5
@@ -150,10 +153,10 @@
 
                     if (this.Client.RouterClientPort > 0)
                     {
-                        _ = this._swrite.WriteAsync(new CommandMessage("SetOption", "RouterClientPort", this.Client.RouterClientPort.ToString()).Pack());
+                        _ = this.swrite.WriteAsync(new CommandMessage("SetOption", "RouterClientPort", this.Client.RouterClientPort.ToString()).Pack());
                     }
 
-                    byte[] readbuff = new byte[TcpMapService.DefaultBufferSize];
+                    byte[] readbuff = new byte[TcpMapService.defaultBufferSize];
                     while (this.IsStarted)
                     {
                         CommandMessage msg;
@@ -167,7 +170,7 @@
 
                               try
                               {
-                                  await this._swrite.WriteAsync(new CommandMessage("_ping_", "forread").Pack());
+                                  await this.swrite.WriteAsync(new CommandMessage("_ping_", "forread").Pack());
                               }
                               catch (Exception x)
                               {
@@ -176,7 +179,7 @@
                           });
                         try
                         {
-                            msg = await CommandMessage.ReadFromStreamAsync(this._sread);
+                            msg = await CommandMessage.ReadFromStreamAsync(this.sread);
                         }
                         finally
                         {
@@ -185,7 +188,7 @@
 
                         if (msg == null)
                         {
-                            TcpMapService.LogMessage("no message ? Connected:" + this._socket.Connected);
+                            TcpMapService.LogMessage("no message ? Connected:" + this.socket.Connected);
                             return;
                         }
 
@@ -233,7 +236,7 @@
                                 }).ToString();
                                 break;
                             case "_ping_":
-                                await this._swrite.WriteAsync(new CommandMessage("_ping_result_").Pack());
+                                await this.swrite.WriteAsync(new CommandMessage("_ping_result_").Pack());
                                 break;
                             case "_ping_result_":
                                 break;
@@ -253,7 +256,7 @@
                 }
                 if (this.IsStarted)
                 {
-                    this._socket.CloseSocket();//logic failed..
+                    this.socket.CloseSocket();//logic failed..
                     againTimeout = 125;
                     goto StartAgain;
                 }
@@ -266,17 +269,17 @@
             this.IsStarted = false;
             this.IsConnected = false;
 
-            if (this._socket != null)
+            if (this.socket != null)
             {
                 try
                 {
-                    this._socket.CloseSocket();
+                    this.socket.CloseSocket();
                 }
                 catch (Exception x)
                 {
                     this.OnError(x);
                 }
-                this._socket = null;
+                this.socket = null;
             }
         }
 
@@ -344,7 +347,7 @@
             }
             msg.Name = "CreateUDPNatResult";
             this.LogMessage("TcpMapClientWorker sending " + msg);
-            await this._swrite.WriteAsync(msg.Pack());
+            await this.swrite.WriteAsync(msg.Pack());
         }
 
         private async Task ProvidePreSessionAsync ()
@@ -354,9 +357,9 @@
                 try
                 {
                     var session = new TcpMapClientSession(this.Client, null);
-                    lock (this._presessions)
+                    lock (this.presessions)
                     {
-                        this._presessions.Add(session);
+                        this.presessions.Add(session);
                     }
 
                     try
@@ -365,9 +368,9 @@
                     }
                     finally
                     {
-                        lock (this._presessions)
+                        lock (this.presessions)
                         {
-                            this._presessions.Remove(session);
+                            this.presessions.Remove(session);
                         }
                     }
                     if (session.SessionId != null)
@@ -412,7 +415,7 @@
             }
             msg.Name = "StartSessionResult";
             this.LogMessage("TcpMapClientWorker sending " + msg);
-            await this._swrite.WriteAsync(msg.Pack());
+            await this.swrite.WriteAsync(msg.Pack());
         }
 
         private async Task DoCloseSessionAsync (CommandMessage msg)
@@ -423,7 +426,7 @@
                 session.Close();
             }
             msg.Name = "CloseSessionResult";
-            await this._swrite.WriteAsync(msg.Pack());
+            await this.swrite.WriteAsync(msg.Pack());
         }
 
         public void Stop ()
@@ -436,22 +439,22 @@
             this.IsStarted = false;
             this.IsConnected = false;
             //LogMessage("Warning:Stop at " + Environment.StackTrace);
-            if (this._socket != null)
+            if (this.socket != null)
             {
                 try
                 {
-                    this._socket.CloseSocket();
+                    this.socket.CloseSocket();
                 }
                 catch (Exception x)
                 {
                     this.OnError(x);
                 }
-                this._socket = null;
+                this.socket = null;
             }
-            this._cts_connect?.Cancel();
-            this.LogMessage("ClientWorker Close :_presessions:" + this._presessions.Count + " , sessionMap:" + this.sessionMap.Count);
+            this.cts_connect?.Cancel();
+            this.LogMessage("ClientWorker Close :_presessions:" + this.presessions.Count + " , sessionMap:" + this.sessionMap.Count);
 
-            foreach (TcpMapClientSession session in this._presessions.LockToArray())
+            foreach (TcpMapClientSession session in this.presessions.LockToArray())
             {
                 session.Close();
             }
@@ -492,7 +495,7 @@
             }
         }
 
-        internal List<TcpMapClientSession> _presessions = new List<TcpMapClientSession>();
+        internal List<TcpMapClientSession> presessions = new List<TcpMapClientSession>();
         internal ConcurrentDictionary<string, TcpMapClientSession> sessionMap = new ConcurrentDictionary<string, TcpMapClientSession>();
     }
 
@@ -500,63 +503,62 @@
     {
         private class UDPS : IUDPServer
         {
-            private UdpClient _udp;
+            private readonly UdpClient udp;
 
-            public IPEndPoint LocalEndPoint => (IPEndPoint)this._udp.Client.LocalEndPoint;
+            public IPEndPoint LocalEndPoint => (IPEndPoint)this.udp.Client.LocalEndPoint;
 
-            public UDPS (UdpClient udp) => this._udp = udp;
+            public UDPS (UdpClient udp) => this.udp = udp;
 
-            public void SendToClient (IPEndPoint remote, byte[] buff) => this._udp.Send(buff, buff.Length, remote);
+            public void SendToClient (IPEndPoint remote, byte[] buff) => this.udp.Send(buff, buff.Length, remote);
 
             public byte[] Receive (TimeSpan timeout, out IPEndPoint remote)
             {
                 remote = null;
                 try
                 {
-                    this._udp.Client.ReceiveTimeout = (int)timeout.TotalMilliseconds;
-                    return this._udp.Receive(ref remote);
+                    this.udp.Client.ReceiveTimeout = (int)timeout.TotalMilliseconds;
+                    return this.udp.Receive(ref remote);
                 }
                 catch (Exception)
                 {
                     return null;
                 }
             }
-
         }
 
-        private UdpClient _udp;
-        private TcpMapClientWorker _worker;
-        private string _localnat;
-        private IPEndPoint _lastconnect;
-        public bool IsEverConnected (IPEndPoint ipep) => this._lastconnect != null && ipep.Equals(this._lastconnect);
+        private UdpClient udp;
+        private TcpMapClientWorker worker;
+        private string localnat;
+        private IPEndPoint lastconnect;
+        public bool IsEverConnected (IPEndPoint ipep) => this.lastconnect != null && ipep.Equals(this.lastconnect);
 
         public void Start (TcpMapClientWorker worker, UdpClient udp, string localnat)
         {
-            this._udp = udp;
-            this._worker = worker;
-            this._localnat = localnat;
+            this.udp = udp;
+            this.worker = worker;
+            this.localnat = localnat;
             UDPServerListener listener = new UDPServerListener(new UDPS(udp), delegate (Stream stream, IPEndPoint remote)
             {
-                this._lastconnect = remote;
+                this.lastconnect = remote;
                 _ = this.HandleStreamAsync(stream, remote);
             });
         }
 
         private async Task HandleStreamAsync (Stream stream, IPEndPoint remote)
         {
-            this._worker.LogMessage("UDP Session Start : " + this._udp.Client.LocalEndPoint + " , " + remote);
+            this.worker.LogMessage("UDP Session Start : " + this.udp.Client.LocalEndPoint + " , " + remote);
             try
             {
                 using Socket localsock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
                 localsock.InitTcp();
-                await localsock.ConnectAsync(this._worker.Client.ClientHost, this._worker.Client.ClientPort);
+                await localsock.ConnectAsync(this.worker.Client.ClientHost, this.worker.Client.ClientPort);
 
                 TcpMapConnectorSession session = new TcpMapConnectorSession(new SimpleSocketStream(localsock));
                 await session.DirectWorkAsync(stream, stream);
             }
             catch (Exception x)
             {
-                this._worker.OnError(x);
+                this.worker.OnError(x);
             }
             finally
             {

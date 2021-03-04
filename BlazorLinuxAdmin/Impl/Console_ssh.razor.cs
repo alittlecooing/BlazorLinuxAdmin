@@ -11,13 +11,13 @@
         private string username;
         private string password;
         private string viewmode;
-        private bool _isdisposed = false;
+        private bool isdisposed = false;
 
         private SshClient client;
         private ShellStream shellstream;
 
-        private Queue<string> linequeue = new Queue<string>();
-        private Action _notifylineready;
+        private readonly Queue<string> linequeue = new Queue<string>();
+        private Action notifylineready;
 
         protected override void OnInitialized ()
         {
@@ -48,7 +48,7 @@
 
         void IDisposable.Dispose ()
         {
-            this._isdisposed = true;
+            this.isdisposed = true;
             if (this.client != null)
             {
                 this.client.Dispose();
@@ -131,7 +131,7 @@
                     return;
                 }
 
-                this._notifylineready = null;
+                this.notifylineready = null;
                 this.linequeue.Clear();
 
                 this.viewmode = "connected";
@@ -199,7 +199,7 @@
 
             using System.IO.StreamReader sr = new System.IO.StreamReader(this.shellstream);
 
-            while (!this._isdisposed && this.client.IsConnected)
+            while (!this.isdisposed && this.client.IsConnected)
             {
                 System.Threading.Thread.Sleep(10);
                 //TODO:???
@@ -225,10 +225,7 @@
                     this.linequeue.Enqueue(line);
                 }
 
-                if (this._notifylineready != null)
-                {
-                    this._notifylineready();
-                }
+                this.notifylineready?.Invoke();
             }
         }
 
@@ -239,7 +236,7 @@
             this.client.Dispose();
         }
 
-        private void bdtready (BlazorDomTree bdt)
+        private void BDTReady (BlazorDomTree bdt)
         {
             BlazorSession ses = BlazorSession.Current;
 
@@ -298,7 +295,7 @@
                     int p33 = line.SafeIndexOf("\x1b[", pos);
                     if (p33 == -1)
                     {
-                        string laststr = line.Substring(pos);
+                        string laststr = line[pos..];
                         if (!string.IsNullOrEmpty(laststr))
                         {
                             //ses.ConsoleLog("last", System.Text.Json.JsonSerializer.Serialize(laststr));
@@ -321,7 +318,7 @@
                     if (p33 > pos)
                     {
                         //ses.ConsoleLog("normal", System.Text.Json.JsonSerializer.Serialize(line.Substring(pos, p33 - pos)));
-                        SetLastColor(d.Create("span")).InnerText(line.Substring(pos, p33 - pos));
+                        SetLastColor(d.Create("span")).InnerText(line[pos..p33]);
                     }
 
                     pos = p33 + 2;
@@ -335,7 +332,7 @@
                     {
                         //invalid
                         _lastcolor = "red";
-                        SetLastColor(d.Create("span")).InnerText(line.Substring(pos));
+                        SetLastColor(d.Create("span")).InnerText(line[pos..]);
                         break;
                     }
 
@@ -350,7 +347,7 @@
                         }
                     }
 
-                    string controlcode = line.Substring(pos, p33 - pos);
+                    string controlcode = line[pos..p33];
                     //d.Create("b").Style("color", "cyan").InnerText(controlcode);
                     //ses.ConsoleLog("control", System.Text.Json.JsonSerializer.Serialize(controlcode));
 
@@ -360,22 +357,18 @@
                     }
                     else if (controlcode.StartsWith("01;"))
                     {
-                        _lastcolor = GetColor(controlcode.Substring(3));
+                        _lastcolor = GetColor(controlcode[3..]);
                     }
 
                     pos = p33 + 3;
-
                 }
             }
 
-            void ScrollBottom ()
-            {
-                resultdiv.Eval("this.scrollTop=this.scrollHeight");
-            }
+            void ScrollBottom () => resultdiv.Eval("this.scrollTop=this.scrollHeight");
 
             inpword.SetFocus(99);
 
-            this._notifylineready = delegate ()
+            this.notifylineready = delegate ()
             {
                 ses.InvokeInRenderThread(delegate
                 {
@@ -443,9 +436,11 @@
 
             PlusControl div2 = bdt.Root.Create("div style='display:flex;'");
 
-            List<string> cmds = new List<string>();
-            cmds.Add("ls");
-            cmds.Add("ps -ef|grep dotnet");
+            List<string> cmds = new List<string>
+            {
+                "ls",
+                "ps -ef|grep dotnet"
+            };
 
             foreach (string cmd in cmds)
             {
@@ -458,20 +453,17 @@
             }
         }
 
-        private static string GetColor (string code)
+        private static string GetColor (string code) => code switch
         {
-            switch (code)
-            {
-                case "30m": return "black";
-                case "31m": return "red";
-                case "32m": return "green";
-                case "33m": return "yellow";
-                case "34m": return "blue";
-                case "35m": return "purple";
-                case "36m": return "skyblue";
-                case "37m": return "white";
-                default: return null;
-            }
-        }
+            "30m" => "black",
+            "31m" => "red",
+            "32m" => "green",
+            "33m" => "yellow",
+            "34m" => "blue",
+            "35m" => "purple",
+            "36m" => "skyblue",
+            "37m" => "white",
+            _ => null,
+        };
     }
 }

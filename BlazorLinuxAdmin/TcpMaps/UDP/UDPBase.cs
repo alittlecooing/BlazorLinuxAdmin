@@ -1,12 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace BlazorLinuxAdmin.TcpMaps.UDP
+﻿namespace BlazorLinuxAdmin.TcpMaps.UDP
 {
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Text;
+    using System.Threading;
+    using System.Threading.Tasks;
+
     public enum UDPPackageType : long
     {
         Unknown = 0
@@ -15,8 +15,8 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
     }
     public class UDPConnectJson
     {
-        public string token { get; set; }
-        public string code { get; set; }
+        public string Token { get; set; }
+        public string Code { get; set; }
 
         public static UDPConnectJson Deserialize (string expr)
         {
@@ -33,19 +33,19 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
     }
     public static class UDPMeta
     {
-        public const int BestUDPSize = 1350;
-        private const byte pt0 = 31;
-        private const byte pt1 = 41;
-        private const byte pt2 = 59;
-        private const byte pt3 = 26;
-        private const byte pt4 = 53;
-        private const byte pt5 = 58;
-        private const byte pt6 = 97;
+        public const int Best_UDP_Size = 1350;
+        private const byte _pt0 = 31;
+        private const byte _pt1 = 41;
+        private const byte _pt2 = 59;
+        private const byte _pt3 = 26;
+        private const byte _pt4 = 53;
+        private const byte _pt5 = 58;
+        private const byte _pt6 = 97;
 
         public static byte[] CreateSessionConnect (long sessionid, string token)
         {
 
-            byte[] jsonbuff = Encoding.UTF8.GetBytes(System.Text.Json.JsonSerializer.Serialize(new UDPConnectJson() { token = token }));
+            byte[] jsonbuff = Encoding.UTF8.GetBytes(System.Text.Json.JsonSerializer.Serialize(new UDPConnectJson() { Token = token }));
             byte[] allbuff = new byte[16 + jsonbuff.Length];
             SetPackageType(allbuff, UDPPackageType.SessionConnect);
             Buffer.BlockCopy(BitConverter.GetBytes(sessionid), 0, allbuff, 8, 8);
@@ -55,40 +55,44 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
 
         public static byte[] CreateSessionPrepair (long sessionid, string token)
         {
-            byte[] jsonbuff = Encoding.UTF8.GetBytes(System.Text.Json.JsonSerializer.Serialize(new UDPConnectJson() { token = token }));
+            byte[] jsonbuff = Encoding.UTF8.GetBytes(System.Text.Json.JsonSerializer.Serialize(new UDPConnectJson() { Token = token }));
             byte[] allbuff = new byte[16 + jsonbuff.Length];
             SetPackageType(allbuff, UDPPackageType.SessionPrepair);
             Buffer.BlockCopy(BitConverter.GetBytes(sessionid), 0, allbuff, 8, 8);
             Buffer.BlockCopy(jsonbuff, 0, allbuff, 16, jsonbuff.Length);
             return allbuff;
         }
+
         public static byte[] CreateSessionConfirm (long sessionid, string token)
         {
-            byte[] jsonbuff = Encoding.UTF8.GetBytes(System.Text.Json.JsonSerializer.Serialize(new UDPConnectJson() { token = token }));
+            byte[] jsonbuff = Encoding.UTF8.GetBytes(System.Text.Json.JsonSerializer.Serialize(new UDPConnectJson() { Token = token }));
             byte[] allbuff = new byte[16 + jsonbuff.Length];
             SetPackageType(allbuff, UDPPackageType.SessionConfirm);
             Buffer.BlockCopy(BitConverter.GetBytes(sessionid), 0, allbuff, 8, 8);
             Buffer.BlockCopy(jsonbuff, 0, allbuff, 16, jsonbuff.Length);
             return allbuff;
         }
+
         public static byte[] CreateSessionReady (long sessionid, string token)
         {
-            byte[] jsonbuff = Encoding.UTF8.GetBytes(System.Text.Json.JsonSerializer.Serialize(new UDPConnectJson() { token = token }));
+            byte[] jsonbuff = Encoding.UTF8.GetBytes(System.Text.Json.JsonSerializer.Serialize(new UDPConnectJson() { Token = token }));
             byte[] allbuff = new byte[16 + jsonbuff.Length];
             SetPackageType(allbuff, UDPPackageType.SessionReady);
             Buffer.BlockCopy(BitConverter.GetBytes(sessionid), 0, allbuff, 8, 8);
             Buffer.BlockCopy(jsonbuff, 0, allbuff, 16, jsonbuff.Length);
             return allbuff;
         }
+
         public static byte[] CreateSessionError (long sessionid, string code)
         {
-            byte[] jsonbuff = Encoding.UTF8.GetBytes(System.Text.Json.JsonSerializer.Serialize(new UDPConnectJson() { code = code }));
+            byte[] jsonbuff = Encoding.UTF8.GetBytes(System.Text.Json.JsonSerializer.Serialize(new UDPConnectJson() { Code = code }));
             byte[] allbuff = new byte[16 + jsonbuff.Length];
             SetPackageType(allbuff, UDPPackageType.SessionError);
             Buffer.BlockCopy(BitConverter.GetBytes(sessionid), 0, allbuff, 8, 8);
             Buffer.BlockCopy(jsonbuff, 0, allbuff, 16, jsonbuff.Length);
             return allbuff;
         }
+
         public static byte[] CreateSessionIdle (long sessionid)
         {
             byte[] allbuff = new byte[16];
@@ -107,10 +111,9 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
             Buffer.BlockCopy(data, offset, allbuff, 32, count);
             return allbuff;
         }
-        public static void UpdateDataRead (byte[] allbuff, long readminindex)
-        {
-            Buffer.BlockCopy(BitConverter.GetBytes(readminindex), 0, allbuff, 16, 8);
-        }
+
+        public static void UpdateDataRead (byte[] allbuff, long readminindex) => Buffer.BlockCopy(BitConverter.GetBytes(readminindex), 0, allbuff, 16, 8);
+
         public static byte[] CreateDataRead (long sessionid, long readminindex, long dataindex)
         {
             byte[] allbuff = new byte[32];
@@ -120,6 +123,7 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
             Buffer.BlockCopy(BitConverter.GetBytes(dataindex), 0, allbuff, 24, 8); ;
             return allbuff;
         }
+
         public static byte[] CreateDataMiss (long sessionid, long readminindex, long[] dataindexes)
         {
             byte[] allbuff = new byte[24 + dataindexes.Length * 8];
@@ -132,6 +136,7 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
             }
             return allbuff;
         }
+
         public static byte[] CreateDataPing (long sessionid, long readminindex, long maxdataindex)
         {
             byte[] allbuff = new byte[32];
@@ -144,34 +149,31 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
 
         public static UDPPackageType GetPackageType (byte[] buff)
         {
-            if (buff[0] == pt0 && buff[1] == pt1 && buff[2] == pt2 && buff[3] == pt3
-                && buff[4] == pt4 && buff[5] == pt5 && buff[6] == pt6)
+            if (buff[0] == _pt0 && buff[1] == _pt1 && buff[2] == _pt2 && buff[3] == _pt3
+                && buff[4] == _pt4 && buff[5] == _pt5 && buff[6] == _pt6)
             {
                 long v = buff[7];
                 return (UDPPackageType)v;
             }
             return UDPPackageType.Unknown;
         }
+
         public static void SetPackageType (byte[] buff, UDPPackageType type)
         {
-            buff[0] = pt0; buff[1] = pt1; buff[2] = pt2; buff[3] = pt3; buff[4] = pt4; buff[5] = pt5; buff[6] = pt6;
+            buff[0] = _pt0; buff[1] = _pt1; buff[2] = _pt2; buff[3] = _pt3; buff[4] = _pt4; buff[5] = _pt5; buff[6] = _pt6;
             buff[7] = (byte)type;
         }
     }
 
-
-
     public abstract class UDPBaseStream : Stream
     {
-        private DateTime _dts = DateTime.Now;
-        private bool _closed = false;
-        private Timer _timer;
+        private bool closed = false;
+        private Timer timer;
 
         public abstract long SessionId { get; internal set; }
         protected abstract void SendToPeer (byte[] data);
         protected abstract void OnPost (byte[] data);
         protected abstract void OnPost (byte[] data, int offset, int count);
-
 
         protected void ProcessUDPPackage (UDPPackageType pt, byte[] data)
         {
@@ -191,14 +193,14 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
 
             if (pt == UDPPackageType.DataPost)
             {
-                if (this._closed)
+                if (this.closed)
                 {
                     this.SendToPeer(UDPMeta.CreateSessionError(this.SessionId, "closed"));
                     return;
                 }
 
                 long peerminreadindex = BitConverter.ToInt64(data, 16);
-                lock (this._postmap)
+                lock (this.postmap)
                 {
                     this.OnGetPeerMinRead(peerminreadindex);
                 }
@@ -207,37 +209,35 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
 
                 //Console.WriteLine("DataPost:" + dataindex);
 
-                if (dataindex == this._readminindex + 1)
+                if (dataindex == this.readminindex + 1)
                 {
                     this.OnPost(data, 32, data.Length - 32);
-                    this._readminindex = dataindex;
-                    byte[] buff;
-                    while (this._buffmap.TryGetValue(this._readminindex + 1, out buff))
+                    this.readminindex = dataindex;
+                    while (this.buffmap.TryGetValue(this.readminindex + 1, out byte[] buff))
                     {
-                        this._readminindex++;
-                        this._buffmap.Remove(this._readminindex);
+                        this.readminindex++;
+                        this.buffmap.Remove(this.readminindex);
                         this.OnPost(buff);
                     }
-                    this.SendToPeer(UDPMeta.CreateDataRead(this.SessionId, this._readminindex, dataindex));
+                    this.SendToPeer(UDPMeta.CreateDataRead(this.SessionId, this.readminindex, dataindex));
                 }
                 else
                 {
-                    if (dataindex > this._readmaxindex)
+                    if (dataindex > this.readmaxindex)
                     {
-                        this._readmaxindex = dataindex;
+                        this.readmaxindex = dataindex;
                     }
 
                     byte[] buff = new byte[data.Length - 32];
                     Buffer.BlockCopy(data, 32, buff, 0, buff.Length);
-                    this._buffmap[dataindex] = buff;
+                    this.buffmap[dataindex] = buff;
                 }
-
             }
             if (pt == UDPPackageType.DataRead)
             {
                 long peerminreadindex = BitConverter.ToInt64(data, 16);
                 long dataindex = BitConverter.ToInt64(data, 24);
-                lock (this._postmap)
+                lock (this.postmap)
                 {
                     this.PostMapRemove(dataindex);
                     this.OnGetPeerMinRead(peerminreadindex);
@@ -246,7 +246,7 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
             if (pt == UDPPackageType.DataMiss)
             {
                 long peerminreadindex = BitConverter.ToInt64(data, 16);
-                lock (this._postmap)
+                lock (this.postmap)
                 {
                     this.OnGetPeerMinRead(peerminreadindex);
                 }
@@ -257,9 +257,9 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
                 {
                     long dataindex = BitConverter.ToInt64(data, 24 + missid * 8);
                     DataItem item = null;
-                    lock (this._postmap)
+                    lock (this.postmap)
                     {
-                        this._postmap.TryGetValue(dataindex, out item);
+                        this.postmap.TryGetValue(dataindex, out item);
                     }
                     if (item != null)
                     {
@@ -275,43 +275,44 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
                 {
                     list.Sort(delegate (DataItem d1, DataItem d2)
                     {
-                        return d1.SendTime.CompareTo(d2.SendTime);
+                        return d1.sendTime.CompareTo(d2.sendTime);
                     });
                     int maxsendagain = 65536;
 
                     foreach (DataItem item in list)
                     {
-                        if (DateTime.Now - item.SendTime < TimeSpan.FromMilliseconds(this.GetPackageLostMS()))
+                        if (DateTime.Now - item.sendTime < TimeSpan.FromMilliseconds(this.GetPackageLostMS()))
                         {
                             break;
                         }
 
-                        if (maxsendagain < item.UDPData.Length)
+                        if (maxsendagain < item.udpData.Length)
                         {
                             break;
                         }
 
-                        maxsendagain -= item.UDPData.Length;
-                        UDPMeta.UpdateDataRead(item.UDPData, this._readminindex);
-                        item.SendTime = DateTime.Now;
-                        item.RetryCount++;
-                        this.SendToPeer(item.UDPData);
+                        maxsendagain -= item.udpData.Length;
+                        UDPMeta.UpdateDataRead(item.udpData, this.readminindex);
+                        item.sendTime = DateTime.Now;
+                        item.retryCount++;
+                        this.SendToPeer(item.udpData);
                     }
                 }
             }
+
             if (pt == UDPPackageType.DataPing)
             {
                 long peerminreadindex = BitConverter.ToInt64(data, 16);
-                lock (this._postmap)
+                lock (this.postmap)
                 {
                     this.OnGetPeerMinRead(peerminreadindex);
                 }
 
                 long maxdataindex = BitConverter.ToInt64(data, 24);
                 List<long> misslist = null;
-                for (long index = this._readminindex + 1; index <= maxdataindex; index++)
+                for (long index = this.readminindex + 1; index <= maxdataindex; index++)
                 {
-                    if (this._buffmap.ContainsKey(index))
+                    if (this.buffmap.ContainsKey(index))
                     {
                         continue;
                     }
@@ -322,39 +323,39 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
                     }
 
                     misslist.Add(index);
-                    if (misslist.Count * 8 + 40 > UDPMeta.BestUDPSize)
+                    if (misslist.Count * 8 + 40 > UDPMeta.Best_UDP_Size)
                     {
                         break;
                     }
                 }
                 if (misslist != null)
                 {
-                    this.SendToPeer(UDPMeta.CreateDataMiss(this.SessionId, this._readminindex, misslist.ToArray()));
+                    this.SendToPeer(UDPMeta.CreateDataMiss(this.SessionId, this.readminindex, misslist.ToArray()));
                 }
                 else
                 {
-                    this.SendToPeer(UDPMeta.CreateDataRead(this.SessionId, this._readminindex, this._readminindex));
+                    this.SendToPeer(UDPMeta.CreateDataRead(this.SessionId, this.readminindex, this.readminindex));
                 }
             }
         }
 
-        private long _peerminreadindex = 0;
+        private long peerminreadindex = 0;
         private void OnGetPeerMinRead (long peerminreadindex)
         {
-            if (peerminreadindex < this._peerminreadindex)
+            if (peerminreadindex < this.peerminreadindex)
             {
                 return;
             }
 
-            if (this._postmap.Count == 0)
+            if (this.postmap.Count == 0)
             {
                 return;
             }
 
             List<long> list = null;
-            foreach (DataItem item in this._postmap.Values)
+            foreach (DataItem item in this.postmap.Values)
             {
-                if (item.DataIndex > peerminreadindex)
+                if (item.dataIndex > peerminreadindex)
                 {
                     continue;
                 }
@@ -364,7 +365,7 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
                     list = new List<long>();
                 }
 
-                list.Add(item.DataIndex);
+                list.Add(item.dataIndex);
             }
             if (list != null)
             {
@@ -373,62 +374,48 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
                     this.PostMapRemove(index);
                 }
             }
-            this._peerminreadindex = peerminreadindex;
+            this.peerminreadindex = peerminreadindex;
         }
 
-        private long _readminindex = 0;
-        private long _readmaxindex = 0;
-        private Dictionary<long, byte[]> _buffmap = new Dictionary<long, byte[]>();
+        private long readminindex = 0;
+        private long readmaxindex = 0;
+        private readonly Dictionary<long, byte[]> buffmap = new Dictionary<long, byte[]>();
 
-        public string GetDebugString ()
-        {
-            return this._buffmap.Count + ":" + this._postmap.Count;
-        }
+        public string GetDebugString () => this.buffmap.Count + ":" + this.postmap.Count;
 
         private long nextdataindex = 0;
         public class DataItem
         {
-            public long DataIndex;
-            public byte[] UDPData;
-            public DateTime SendTime;
-            public int RetryCount;
-            public int PingCount;
+            public long dataIndex;
+            public byte[] udpData;
+            public DateTime sendTime;
+            public int retryCount;
+            public int pingCount;
 
-            public override string ToString ()
-            {
-                return this.DataIndex + ":" + this.UDPData.Length;
-            }
+            public override string ToString () => this.dataIndex + ":" + this.udpData.Length;
         }
 
-        private Dictionary<long, DataItem> _postmap = new Dictionary<long, DataItem>();
-        private int _mindelay = 0;
+        private readonly Dictionary<long, DataItem> postmap = new Dictionary<long, DataItem>();
+        private int mindelay = 0;
 
         private int GetPackageLostMS ()
         {
-            int md = this._mindelay == 0 ? 800 : this._mindelay;
+            int md = this.mindelay == 0 ? 800 : this.mindelay;
             return (int)(md * 1.3);
         }
 
         private void PostMapRemove (long index)
         {
-            DataItem item;
-            if (!this._postmap.TryGetValue(index, out item))
+            if (!this.postmap.TryGetValue(index, out DataItem item))
             {
                 return;
             }
 
-            this._postmap.Remove(index);
-            if (item.RetryCount == 0)
+            this.postmap.Remove(index);
+            if (item.retryCount == 0)
             {
-                TimeSpan ts = DateTime.Now - item.SendTime;
-                if (this._mindelay == 0)
-                {
-                    this._mindelay = (int)ts.TotalMilliseconds;
-                }
-                else
-                {
-                    this._mindelay = Math.Min(this._mindelay, (int)ts.TotalMilliseconds);
-                }
+                TimeSpan ts = DateTime.Now - item.sendTime;
+                this.mindelay = this.mindelay == 0 ? (int)ts.TotalMilliseconds : Math.Min(this.mindelay, (int)ts.TotalMilliseconds);
             }
         }
 
@@ -450,7 +437,6 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
             t.Start();
         }
 
-
         public override async Task<int> ReadAsync (byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             Task<int> t = null;
@@ -469,12 +455,7 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
                 cts.Cancel();
             });
             await cts.Token.WaitForSignalSettedAsync(-1);
-            if (error != null)
-            {
-                throw new Exception(error.Message, error);
-            }
-
-            return await t;
+            return error != null ? throw new Exception(error.Message, error) : await t;
         }
 
         //public override ValueTask<int> ReadAsync(Memory<byte> buffer, CancellationToken cancellationToken = default)
@@ -514,150 +495,125 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
 
         public override void Write (byte[] buffer, int offset, int count)
         {
-            if (this._closed)
+            if (this.closed)
             {
                 throw (new Exception("stream closed"));
             }
 
             //Console.WriteLine("UDPBaseStream write " + count);
 
-            while (count > UDPMeta.BestUDPSize)
+            while (count > UDPMeta.Best_UDP_Size)
             {
-                this.Write(buffer, offset, UDPMeta.BestUDPSize);
-                offset += UDPMeta.BestUDPSize;
-                count -= UDPMeta.BestUDPSize;
+                this.Write(buffer, offset, UDPMeta.Best_UDP_Size);
+                offset += UDPMeta.Best_UDP_Size;
+                count -= UDPMeta.Best_UDP_Size;
             }
 
 
-            DataItem item = new DataItem();
-            item.DataIndex = ++this.nextdataindex;
-
-            item.UDPData = UDPMeta.CreateDataPost(this.SessionId, this._readminindex, item.DataIndex, buffer, offset, count);
-
-            lock (this._postmap)
+            DataItem item = new DataItem
             {
-                this._postmap[item.DataIndex] = item;
+                dataIndex = ++this.nextdataindex
+            };
+
+            item.udpData = UDPMeta.CreateDataPost(this.SessionId, this.readminindex, item.dataIndex, buffer, offset, count);
+
+            lock (this.postmap)
+            {
+                this.postmap[item.dataIndex] = item;
             }
 
-            item.SendTime = DateTime.Now;
-            this.SendToPeer(item.UDPData);
+            item.sendTime = DateTime.Now;
+            this.SendToPeer(item.udpData);
 
-            this._timerlastitem = item;
-            if (this._timer == null)
+            this.timerlastitem = item;
+            if (this.timer == null)
             {
-                this._timer = new Timer(this.OnTimer, null, 100, 100);
+                this.timer = new Timer(this.OnTimer, null, 100, 100);
             }
         }
 
-        private DataItem _timerlastitem;
+        private DataItem timerlastitem;
 
         private void OnTimer (object argstate)
         {
-            if (this._closed)
+            if (this.closed)
             {
-                this._timer.Dispose();
+                this.timer.Dispose();
                 return;
             }
 
-            if (this._postmap.Count == 0)
-            {
-                return;
-            }
-
-            if (DateTime.Now - this._timerlastitem.SendTime < TimeSpan.FromMilliseconds(this.GetPackageLostMS()))
+            if (this.postmap.Count == 0)
             {
                 return;
             }
 
-            if (this._timerlastitem.PingCount > 10)
+            if (DateTime.Now - this.timerlastitem.sendTime < TimeSpan.FromMilliseconds(this.GetPackageLostMS()))
             {
                 return;
             }
 
-            this._timerlastitem.PingCount++;
+            if (this.timerlastitem.pingCount > 10)
+            {
+                return;
+            }
 
-            this.SendToPeer(UDPMeta.CreateDataPing(this.SessionId, this._readminindex, this._timerlastitem.DataIndex));
+            this.timerlastitem.pingCount++;
+
+            this.SendToPeer(UDPMeta.CreateDataPing(this.SessionId, this.readminindex, this.timerlastitem.dataIndex));
         }
 
         protected void OnWorkerThreadExit ()
         {
-            if (this._timer != null)
+            if (this.timer != null)
             {
-                this._timer.Dispose();
+                this.timer.Dispose();
             }
 
-            this._timer = null;
+            this.timer = null;
         }
 
         public override void Flush ()
         {
-
         }
-
 
         public override void Close ()
         {
-            this._closed = true;
-            if (this._timer != null)
+            this.closed = true;
+            if (this.timer != null)
             {
-                this._timer.Dispose();
+                this.timer.Dispose();
             }
 
             base.Close();
-            if (!this._closesend)
+            if (!this.closesend)
             {
-                this._closesend = true;
+                this.closesend = true;
                 this.SendToPeer(UDPMeta.CreateSessionError(this.SessionId, "Close"));
             }
         }
 
-        private bool _closesend = false;
+        private bool closesend = false;
 
         #region Stream
-        public override bool CanRead
-        {
-            get { return true; }
-        }
+        public override bool CanRead => true;
 
-        public override bool CanSeek
-        {
-            get { return false; }
-        }
+        public override bool CanSeek => false;
 
-        public override bool CanWrite
-        {
-            get { return true; }
-        }
+        public override bool CanWrite => true;
 
 
-        public override long Length
-        {
-            get { throw new NotSupportedException(); }
-        }
+        public override long Length => throw new NotSupportedException();
 
         public override long Position
         {
-            get
-            {
-                throw new NotSupportedException();
-            }
-            set
-            {
-                throw new NotSupportedException();
-            }
+            get => throw new NotSupportedException();
+            set => throw new NotSupportedException();
         }
 
-        public override long Seek (long offset, SeekOrigin origin)
-        {
-            throw new NotSupportedException();
-        }
+        public override long Seek (long offset, SeekOrigin origin) => throw new NotSupportedException();
 
-        public override void SetLength (long value)
-        {
-            throw new NotSupportedException();
-        }
+        public override void SetLength (long value) => throw new NotSupportedException();
         #endregion
-
     }
 
     public class AsyncUtil
@@ -672,6 +628,7 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
             });
             return cts;
         }
+
         public static CancellationTokenSource CreateAnyCancelSource (params CancellationToken[] ctarr)
         {
             CancellationTokenSource cts = new CancellationTokenSource();
@@ -687,6 +644,7 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
             });
             return cts;
         }
+
         public static CancellationToken CreateAnyCancelToken (CancellationToken ct1, CancellationToken ct2)
         {
             CancellationTokenSource cts = new CancellationTokenSource();
@@ -702,61 +660,46 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
 
     public class AsyncAwaiter
     {
-        private CancellationTokenSource _cts;
+        private readonly CancellationTokenSource cts;
 
-        public AsyncAwaiter ()
-        {
-            this._cts = new CancellationTokenSource();
-        }
-        public AsyncAwaiter (params CancellationToken[] tokens)
-        {
-            this._cts = AsyncUtil.CreateAnyCancelSource(tokens);
-        }
+        public AsyncAwaiter () => this.cts = new CancellationTokenSource();
+        public AsyncAwaiter (params CancellationToken[] tokens) => this.cts = AsyncUtil.CreateAnyCancelSource(tokens);
 
+        public void Complete () => this.cts.Cancel();
 
-        public void Complete ()
-        {
-            this._cts.Cancel();
-        }
-
-        public bool IsCompleted
-        {
-            get
-            {
-                return this._cts.IsCancellationRequested;
-            }
-        }
+        public bool IsCompleted => this.cts.IsCancellationRequested;
 
         public async Task WaitAsync ()
         {
-            if (this._cts.IsCancellationRequested)
+            if (this.cts.IsCancellationRequested)
             {
                 return;
             }
 
             try
             {
-                await Task.Delay(Timeout.InfiniteTimeSpan, this._cts.Token);
+                await Task.Delay(Timeout.InfiniteTimeSpan, this.cts.Token);
             }
             catch (OperationCanceledException)
             {
             }
         }
+
         public async Task WaitAsync (CancellationToken token)
         {
-            if (this._cts.IsCancellationRequested)
+            if (this.cts.IsCancellationRequested)
             {
                 return;
             }
 
             try
             {
-                token = AsyncUtil.CreateAnyCancelToken(this._cts.Token, token);
+                token = AsyncUtil.CreateAnyCancelToken(this.cts.Token, token);
                 await Task.Delay(Timeout.InfiniteTimeSpan, token);
             }
             catch (OperationCanceledException)
             {
-                if (this._cts.IsCancellationRequested)
+                if (this.cts.IsCancellationRequested)
                 {
                     return;
                 }
@@ -766,14 +709,14 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
         }
         public async Task<bool> WaitAsync (TimeSpan timeout)
         {
-            if (this._cts.IsCancellationRequested)
+            if (this.cts.IsCancellationRequested)
             {
                 return true;
             }
 
             try
             {
-                await Task.Delay(timeout, this._cts.Token);
+                await Task.Delay(timeout, this.cts.Token);
             }
             catch (OperationCanceledException)
             {
@@ -783,19 +726,19 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
         }
         public async Task<bool> WaitAsync (TimeSpan timeout, CancellationToken token)
         {
-            if (this._cts.IsCancellationRequested)
+            if (this.cts.IsCancellationRequested)
             {
                 return true;
             }
 
             try
             {
-                token = AsyncUtil.CreateAnyCancelToken(this._cts.Token, token);
+                token = AsyncUtil.CreateAnyCancelToken(this.cts.Token, token);
                 await Task.Delay(timeout, token);
             }
             catch (OperationCanceledException)
             {
-                if (this._cts.IsCancellationRequested)
+                if (this.cts.IsCancellationRequested)
                 {
                     return true;
                 }
@@ -810,12 +753,12 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
     {
         public BufferedReader (CancellationToken token)
         {
-            this._cts = AsyncUtil.CreateAnyCancelSource(token);
+            this.cts = AsyncUtil.CreateAnyCancelSource(token);
             this.Timeout = TimeSpan.FromSeconds(55);
         }
         public BufferedReader (CancellationToken token, int capacity)
         {
-            this._cts = AsyncUtil.CreateAnyCancelSource(token);
+            this.cts = AsyncUtil.CreateAnyCancelSource(token);
             this.Timeout = TimeSpan.FromSeconds(55);
             this.Capacity = capacity;
         }
@@ -823,31 +766,23 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
         public TimeSpan Timeout { get; set; }
         public int Capacity { get; set; }
 
-        private int _bufflen = 0;
+        private int bufflen = 0;
 
         private bool HasCapacity (int count)
         {
-            return this.Capacity < 1 || this._bufflen <= this.Capacity;
+            return this.Capacity < 1 || this.bufflen <= this.Capacity;
         }
 
-        private byte[] _buff;
-        private int _bidx;
-        private Queue<byte[]> _packs = new Queue<byte[]>();
+        private byte[] buff;
+        private int bidx;
+        private Queue<byte[]> packs = new Queue<byte[]>();
 
+        public bool DataAvailable => this.buff != null || this.packs.Count > 0;
 
-        public bool DataAvailable
-        {
-            get
-            {
-                return this._buff != null || this._packs.Count > 0;
-            }
-        }
-
-        private CancellationTokenSource _cts;
-        private AsyncAwaiter _waitfor_data;
+        private readonly CancellationTokenSource cts;
+        private AsyncAwaiter waitfor_data;
         //AsyncAwaiter _waitfor_capacity;
         //int _nextcapacitylen = 0;
-
 
         public async Task<int> ReadAsync (byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
@@ -855,27 +790,26 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
 
         READBUFF:
 
-            if (this._buff != null)
+            if (this.buff != null)
             {
-                int rl = Math.Min(count - rc, this._buff.Length - this._bidx);
-                Buffer.BlockCopy(this._buff, this._bidx, buffer, offset + rc, rl);
+                int rl = Math.Min(count - rc, this.buff.Length - this.bidx);
+                Buffer.BlockCopy(this.buff, this.bidx, buffer, offset + rc, rl);
                 rc += rl;
-                this._bidx += rl;
-                if (this._bidx == this._buff.Length)
+                this.bidx += rl;
+                if (this.bidx == this.buff.Length)
                 {
-                    this._buff = null;
+                    this.buff = null;
                 }
 
-                lock (this._packs)
+                lock (this.packs)
                 {
-                    this._bufflen -= rl;
+                    this.bufflen -= rl;
                     //if (_nextcapacitylen > 0 && _waitfor_capacity != null && HasCapacity(_nextcapacitylen))
                     //{
                     //	_nextcapacitylen = 0;
                     //	_waitfor_capacity.Complete();
                     //}
                 }
-
             }
 
             if (rc == count)
@@ -883,12 +817,12 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
                 return rc;
             }
 
-            lock (this._packs)
+            lock (this.packs)
             {
-                if (this._packs.Count > 0)
+                if (this.packs.Count > 0)
                 {
-                    this._buff = this._packs.Dequeue();
-                    this._bidx = 0;
+                    this.buff = this.packs.Dequeue();
+                    this.bidx = 0;
                     goto READBUFF;
                 }
 
@@ -897,36 +831,35 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
                     return rc;//don't wait
                 }
 
-                if (this._cts.IsCancellationRequested)
+                if (this.cts.IsCancellationRequested)
                 {
                     return rc;
                 }
 
-                this._cts.Token.ThrowIfCancellationRequested();
-                this._waitfor_data = new AsyncAwaiter();
+                this.cts.Token.ThrowIfCancellationRequested();
+                this.waitfor_data = new AsyncAwaiter();
             }
 
-            await this._waitfor_data.WaitAsync(AsyncUtil.CreateAnyCancelToken(this._cts.Token, cancellationToken));
+            await this.waitfor_data.WaitAsync(AsyncUtil.CreateAnyCancelToken(this.cts.Token, cancellationToken));
 
             goto READBUFF;
-
         }
-
 
         public void PushBuffer (byte[] buff)
         {
-            this._cts.Token.ThrowIfCancellationRequested();
+            this.cts.Token.ThrowIfCancellationRequested();
 
-            lock (this._packs)
+            lock (this.packs)
             {
-                this._packs.Enqueue(buff);
-                this._bufflen += buff.Length;
-                if (this._waitfor_data != null)
+                this.packs.Enqueue(buff);
+                this.bufflen += buff.Length;
+                if (this.waitfor_data != null)
                 {
-                    this._waitfor_data.Complete();
+                    this.waitfor_data.Complete();
                 }
             }
         }
+
         public void PushBuffer (byte[] buffer, int offset, int count)
         {
             byte[] buff = new byte[count];
@@ -934,32 +867,27 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
             this.PushBuffer(buff);
         }
 
-
-
         public void Dispose ()
         {
-            if (this._cts.IsCancellationRequested)
+            if (this.cts.IsCancellationRequested)
             {
                 return;
             }
 
-            lock (this._packs)
+            lock (this.packs)
             {
-                if (this._cts.IsCancellationRequested)
+                if (this.cts.IsCancellationRequested)
                 {
                     return;
                 }
 
-                this._cts.Cancel();
-                if (this._waitfor_data != null)
+                this.cts.Cancel();
+                if (this.waitfor_data != null)
                 {
-                    this._waitfor_data.Complete();
+                    this.waitfor_data.Complete();
                 }
                 //if (_waitfor_capacity != null) _waitfor_capacity.Complete();
-
             }
         }
     }
-
-
 }

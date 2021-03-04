@@ -17,7 +17,7 @@
 
         public bool IsListened { get; private set; }
 
-        private TcpListener _listener;
+        private TcpListener listener;
         private CancellationTokenSource cts;
 
         public void StartWork ()
@@ -44,15 +44,15 @@
             {
                 int againTimeout = 500;
             StartAgain:
-                this._listener = new TcpListener(IPAddress.Parse(this.Server.ServerBind), this.Server.ServerPort);
+                this.listener = new TcpListener(IPAddress.Parse(this.Server.ServerBind), this.Server.ServerPort);
                 try
                 {
-                    this._listener.Start();
+                    this.listener.Start();
                 }
                 catch (Exception x)
                 {
                     this.OnError(x);
-                    this._listener = null;
+                    this.listener = null;
                     this.cts = new CancellationTokenSource();
                     if (!this.IsStarted)
                     {
@@ -74,7 +74,7 @@
                 this.IsListened = true;
                 while (this.IsStarted)
                 {
-                    var socket = await this._listener.AcceptSocketAsync();
+                    var socket = await this.listener.AcceptSocketAsync();
 
                     this.LogMessage("Warning:accept socket " + socket.LocalEndPoint + "," + socket.RemoteEndPoint + " at " + DateTime.Now.ToString("HH:mm:ss.fff"));
 
@@ -126,17 +126,17 @@
             this.IsStarted = false;
             this.IsListened = false;
 
-            if (this._listener != null)
+            if (this.listener != null)
             {
                 try
                 {
-                    this._listener.Stop();
+                    this.listener.Stop();
                 }
                 catch (Exception x)
                 {
                     this.OnError(x);
                 }
-                this._listener = null;
+                this.listener = null;
             }
         }
 
@@ -166,7 +166,7 @@
 
             if (sclient == null)
             {
-                if (DateTime.Now - this._lastDisconnectTime < TimeSpan.FromSeconds(8))//TODO:const connect wait sclient timeout
+                if (DateTime.Now - this.lastDisconnectTime < TimeSpan.FromSeconds(8))//TODO:const connect wait sclient timeout
                 {
                     await Task.Delay(500);
                     goto TryAgain;
@@ -179,12 +179,12 @@
             try
             {
 
-                lock (this._presessions)
+                lock (this.presessions)
                 {
-                    if (this._presessions.Count != 0)
+                    if (this.presessions.Count != 0)
                     {
-                        presession = this._presessions[0];
-                        this._presessions.RemoveAt(0);
+                        presession = this.presessions[0];
+                        this.presessions.RemoveAt(0);
                     }
                 }
 
@@ -200,9 +200,9 @@
                         this.LogMessage("Error:ServerWorker presession upgrade failed @" + tryagainIndex + " , " + sessionid);
                         goto TryAgain;
                     }
-                    lock (this._sessions)
+                    lock (this.sessions)
                     {
-                        this._sessions.Add(presession);
+                        this.sessions.Add(presession);
                     }
 
                     this.LogMessage("ServerWorker session upgraded @" + tryagainIndex + " , " + sessionid);
@@ -254,17 +254,17 @@
         {
         TryAgain:
             TcpMapServerClient sclient = null;
-            lock (this._clients)
+            lock (this.clients)
             {
-                if (this._clients.Count == 1)
+                if (this.clients.Count == 1)
                 {
-                    sclient = this._clients[0];
+                    sclient = this.clients[0];
                 }
-                else if (this._clients.Count != 0)
+                else if (this.clients.Count != 0)
                 {
-                    sclient = this._clients[Interlocked.Increment(ref this.nextclientindex) % this._clients.Count];
+                    sclient = this.clients[Interlocked.Increment(ref this.nextclientindex) % this.clients.Count];
 
-                    if (DateTime.Now - sclient._lastPingTime > TimeSpan.FromSeconds(90))
+                    if (DateTime.Now - sclient.lastPingTime > TimeSpan.FromSeconds(90))
                     {
                         //TODO:maybe the client socket has timeout
                         sclient.Stop();
@@ -291,10 +291,10 @@
             }
 
             this.IsStarted = false;
-            if (this._listener != null)
+            if (this.listener != null)
             {
-                var lis = this._listener;
-                this._listener = null;
+                var lis = this.listener;
+                this.listener = null;
                 lis.Stop();
             }
             if (this.cts != null)
@@ -302,17 +302,17 @@
                 this.cts.Cancel();
             }
             //close all clients/sessions
-            lock (this._clients)
+            lock (this.clients)
             {
-                foreach (var item in this._clients.ToArray())
+                foreach (var item in this.clients.ToArray())
                 {
                     item.Stop();
                 }
             }
 
-            lock (this._sessions)
+            lock (this.sessions)
             {
-                foreach (var item in this._sessions.ToArray())
+                foreach (var item in this.sessions.ToArray())
                 {
                     item.Stop();
                 }
@@ -320,14 +320,14 @@
         }
 
         private int nextclientindex = 0;
-        internal List<TcpMapServerClient> _clients = new List<TcpMapServerClient>();
-        internal List<TcpMapServerClient> _sessions = new List<TcpMapServerClient>();
-        internal List<TcpMapServerClient> _presessions = new List<TcpMapServerClient>();
-        private DateTime _lastDisconnectTime;
+        internal List<TcpMapServerClient> clients = new List<TcpMapServerClient>();
+        internal List<TcpMapServerClient> sessions = new List<TcpMapServerClient>();
+        internal List<TcpMapServerClient> presessions = new List<TcpMapServerClient>();
+        private DateTime lastDisconnectTime;
 
         internal void AddClientOrSession (TcpMapServerClient client)
         {
-            var list = client._is_client ? this._clients : (client.SessionId != null ? this._sessions : this._presessions);
+            var list = client.is_client ? this.clients : (client.sessionId != null ? this.sessions : this.presessions);
             lock (list)
             {
                 list.Add(client);
@@ -356,8 +356,8 @@
 
         internal void RemoveClientOrSession (TcpMapServerClient client)
         {
-            this._lastDisconnectTime = DateTime.Now;
-            var list = client._is_client ? this._clients : (client.SessionId != null ? this._sessions : this._presessions);
+            this.lastDisconnectTime = DateTime.Now;
+            var list = client.is_client ? this.clients : (client.sessionId != null ? this.sessions : this.presessions);
             lock (list)
             {
                 list.Remove(client);
@@ -367,12 +367,12 @@
 
     public class TcpMapServerConnector
     {
-        private readonly TcpMapServerWorker _worker;
-        public TcpMapServerConnector (TcpMapServerWorker sworker) => this._worker = sworker;
+        private readonly TcpMapServerWorker worker;
+        public TcpMapServerConnector (TcpMapServerWorker sworker) => this.worker = sworker;
 
         internal async Task AcceptConnectorAndWorkAsync (Socket clientSock, CommandMessage connmsg)
         {
-            bool supportEncrypt = this._worker.Server.UseEncrypt;
+            bool supportEncrypt = this.worker.Server.UseEncrypt;
             if (connmsg.Args[4] == "0")
             {
                 supportEncrypt = false;
@@ -381,17 +381,17 @@
             byte[] clientKeyIV;
             try
             {
-                this._worker.Server.ConnectorLicense.DescriptSourceKey(Convert.FromBase64String(connmsg.Args[2]), Convert.FromBase64String(connmsg.Args[3]), out clientKeyIV);
+                this.worker.Server.ConnectorLicense.DescriptSourceKey(Convert.FromBase64String(connmsg.Args[2]), Convert.FromBase64String(connmsg.Args[3]), out clientKeyIV);
             }
             catch (Exception x)
             {
-                this._worker.OnError(x);
+                this.worker.OnError(x);
                 var failedmsg = new CommandMessage("ConnectFailed", "InvalidSecureKey");
                 await clientSock.SendAsync(failedmsg.Pack(), SocketFlags.None);
                 return;
             }
 
-            TcpMapServerClient sclient = this._worker.FindClient();
+            TcpMapServerClient sclient = this.worker.FindClient();
             if (sclient == null)
             {
                 var failedmsg = new CommandMessage("ConnectFailed", "NoClient");
@@ -409,7 +409,7 @@
                 Stream _sread, _swrite;
                 if (supportEncrypt)
                 {
-                    this._worker.Server.ConnectorLicense.OverrideStream(clientSock.CreateStream(), clientKeyIV, out _sread, out _swrite);
+                    this.worker.Server.ConnectorLicense.OverrideStream(clientSock.CreateStream(), clientKeyIV, out _sread, out _swrite);
                 }
                 else
                 {
@@ -417,14 +417,14 @@
                 }
 
                 using Socket localsock = new Socket(AddressFamily.InterNetwork, SocketType.Stream, ProtocolType.Tcp);
-                string ip = this._worker.Server.ServerBind;
+                string ip = this.worker.Server.ServerBind;
                 if (ip == "0.0.0.0")
                 {
                     ip = "127.0.0.1";
                 }
 
                 localsock.InitTcp();
-                await localsock.ConnectAsync(ip, this._worker.Server.ServerPort);
+                await localsock.ConnectAsync(ip, this.worker.Server.ServerPort);
 
                 TcpMapConnectorSession session = new TcpMapConnectorSession(new SimpleSocketStream(localsock));
                 await session.DirectWorkAsync(_sread, _swrite);
@@ -445,7 +445,7 @@
                     }
                 }
 
-                string key = connArgument + ":" + sclient.SessionId;
+                string key = connArgument + ":" + sclient.sessionId;
                 if (!_udpcache.TryGetValue(key, out UdpInfoItem natinfo) || natinfo.HasExpired())
                 {
                     var udpmsg = await sclient.CreateUDPNatAsync(connArgument);
@@ -471,7 +471,7 @@
             {
 
                 var resmsg = new CommandMessage("ConnectOK", "ConnectOK", supportEncrypt ? "1" : "0"
-                    , ((IPEndPoint)sclient._socket.RemoteEndPoint).Address.ToString(), sclient.OptionRouterClientPort.ToString());
+                    , ((IPEndPoint)sclient.socket.RemoteEndPoint).Address.ToString(), sclient.optionRouterClientPort.ToString());
                 await clientSock.SendAsync(resmsg.Pack(), SocketFlags.None);
             }
             else
@@ -486,8 +486,8 @@
 
             public string NatInfo { get; private set; }
 
-            private readonly DateTime DTStart = DateTime.Now;
-            public bool HasExpired () => DateTime.Now - this.DTStart > TimeSpan.FromSeconds(9);
+            private readonly DateTime dTStart = DateTime.Now;
+            public bool HasExpired () => DateTime.Now - this.dTStart > TimeSpan.FromSeconds(9);
         }
 
         //TODO:use application level global cache..
@@ -500,27 +500,27 @@
         {
         }
 
-        internal int OptionRouterClientPort;
+        internal int optionRouterClientPort;
         private static long _nextscid = 30001;
-        private readonly long _scid = Interlocked.Increment(ref _nextscid);
-        private TcpMapServerWorker _worker = null;
-        private Stream _sread, _swrite;
-        internal Socket _socket;
+        private readonly long scid = Interlocked.Increment(ref _nextscid);
+        private TcpMapServerWorker worker = null;
+        private Stream sread, swrite;
+        internal Socket socket;
 
-        internal bool _is_client = true;
-        internal bool _is_session = false;
+        internal bool is_client = true;
+        internal bool is_session = false;
 
-        internal DateTime _lastPingTime = DateTime.Now;
+        internal DateTime lastPingTime = DateTime.Now;
 
-        public string SessionId = null;
-        private CancellationTokenSource _cts_wait_upgrade;
+        public string sessionId = null;
+        private CancellationTokenSource cts_wait_upgrade;
 
         internal async Task UpgradeSessionAsync (string newsid)
         {
-            this.SessionId = newsid;
-            await this._swrite.WriteAsync(new CommandMessage("UpgradeSession", newsid).Pack());
+            this.sessionId = newsid;
+            await this.swrite.WriteAsync(new CommandMessage("UpgradeSession", newsid).Pack());
         ReadAgain:
-            var res = await CommandMessage.ReadFromStreamAsync(this._sread);
+            var res = await CommandMessage.ReadFromStreamAsync(this.sread);
             if (res == null)
             {
                 throw (new Exception("Invalid null message "));
@@ -550,7 +550,7 @@
 
             TcpMapServerClient client = new TcpMapServerClient
             {
-                _socket = socket
+                socket = socket
             };
             await client.WorkAsync(connmsg);
         }
@@ -559,37 +559,37 @@
         {
             if (connmsg.Name == "SessionConnect")
             {
-                this._is_client = false;
-                this._is_session = true;
+                this.is_client = false;
+                this.is_session = true;
             }
 
             byte[] clientKeyIV;
 
-            this._worker = TcpMapService.FindServerWorkerByKey(connmsg.Args[0], int.Parse(connmsg.Args[1]));
+            this.worker = TcpMapService.FindServerWorkerByKey(connmsg.Args[0], int.Parse(connmsg.Args[1]));
 
             string failedreason = null;
 
-            if (this._worker == null)
+            if (this.worker == null)
             {
                 failedreason = "NotFound";
             }
-            else if (!this._worker.Server.IsValidated)
+            else if (!this.worker.Server.IsValidated)
             {
                 failedreason = "NotValidated";
             }
-            else if (this._worker.Server.IsDisabled)
+            else if (this.worker.Server.IsDisabled)
             {
                 failedreason = "NotEnabled";
             }
 
-            if (this._worker == null || !string.IsNullOrEmpty(failedreason))
+            if (this.worker == null || !string.IsNullOrEmpty(failedreason))
             {
                 var failedmsg = new CommandMessage("ConnectFailed", failedreason);
-                await this._socket.SendAsync(failedmsg.Pack(), SocketFlags.None);
+                await this.socket.SendAsync(failedmsg.Pack(), SocketFlags.None);
                 return;
             }
 
-            bool supportEncrypt = this._worker.Server.UseEncrypt;
+            bool supportEncrypt = this.worker.Server.UseEncrypt;
             if (connmsg.Args[4] == "0")
             {
                 supportEncrypt = false;
@@ -597,48 +597,48 @@
 
             try
             {
-                this._worker.Server.License.DescriptSourceKey(Convert.FromBase64String(connmsg.Args[2]), Convert.FromBase64String(connmsg.Args[3]), out clientKeyIV);
+                this.worker.Server.License.DescriptSourceKey(Convert.FromBase64String(connmsg.Args[2]), Convert.FromBase64String(connmsg.Args[3]), out clientKeyIV);
             }
             catch (Exception x)
             {
-                this._worker.OnError(x);
+                this.worker.OnError(x);
                 var failedmsg = new CommandMessage("ConnectFailed", "InvalidSecureKey");
-                await this._socket.SendAsync(failedmsg.Pack(), SocketFlags.None);
+                await this.socket.SendAsync(failedmsg.Pack(), SocketFlags.None);
                 return;
             }
 
             var successMsg = new CommandMessage("ConnectOK", "ConnectOK", supportEncrypt ? "1" : "0");
-            await this._socket.SendAsync(successMsg.Pack(), SocketFlags.None);
+            await this.socket.SendAsync(successMsg.Pack(), SocketFlags.None);
 
             if (supportEncrypt)
             {
-                this._worker.Server.License.OverrideStream(this._socket.CreateStream(), clientKeyIV, out this._sread, out this._swrite);
+                this.worker.Server.License.OverrideStream(this.socket.CreateStream(), clientKeyIV, out this.sread, out this.swrite);
             }
             else
             {
-                this._sread = this._swrite = this._socket.CreateStream();
+                this.sread = this.swrite = this.socket.CreateStream();
             }
 
-            if (this._is_session)
+            if (this.is_session)
             {
-                this.SessionId = connmsg.Args[5];
-                if (this.SessionId == null)
+                this.sessionId = connmsg.Args[5];
+                if (this.sessionId == null)
                 {
-                    this._cts_wait_upgrade = new CancellationTokenSource();
+                    this.cts_wait_upgrade = new CancellationTokenSource();
                 }
             }
 
-            this._worker.AddClientOrSession(this);
+            this.worker.AddClientOrSession(this);
             try
             {
-                if (this._is_client)
+                if (this.is_client)
                 {
 
-                    _ = this._swrite.WriteAsync(new CommandMessage("SetOption", "ClientEndPoint", this._socket.RemoteEndPoint.ToString()).Pack());
+                    _ = this.swrite.WriteAsync(new CommandMessage("SetOption", "ClientEndPoint", this.socket.RemoteEndPoint.ToString()).Pack());
 
                     while (true)
                     {
-                        var msg = await CommandMessage.ReadFromStreamAsync(this._sread);
+                        var msg = await CommandMessage.ReadFromStreamAsync(this.sread);
                         //process it...
 
                         if (msg == null)
@@ -656,10 +656,10 @@
                                 switch (msg.Args[0])
                                 {
                                     case "RouterClientPort":
-                                        this.OptionRouterClientPort = int.Parse(optvalue);
+                                        this.optionRouterClientPort = int.Parse(optvalue);
                                         break;
                                     default:
-                                        this._worker.LogMessage("Error:Ignore option " + msg);
+                                        this.worker.LogMessage("Error:Ignore option " + msg);
                                         break;
                                 }
                                 break;
@@ -669,37 +669,37 @@
                                 long reqid = long.Parse(msg.Args[0]);
                                 if (this.reqmap.TryGetValue(reqid, out var ritem))
                                 {
-                                    ritem.Response = msg;
+                                    ritem.response = msg;
                                     ritem.cts.Cancel();
                                 }
                                 else
                                 {
-                                    this._worker.LogMessage("Request Expired : " + msg);
+                                    this.worker.LogMessage("Request Expired : " + msg);
                                 }
                                 break;
                             case "_ping_":
-                                this._lastPingTime = DateTime.Now;
-                                await this._swrite.WriteAsync(new CommandMessage("_ping_result_").Pack());
+                                this.lastPingTime = DateTime.Now;
+                                await this.swrite.WriteAsync(new CommandMessage("_ping_result_").Pack());
                                 break;
                             case "_ping_result_":
                                 break;
                             default:
-                                this._worker.LogMessage("Error: 5 Ignore message " + msg);
+                                this.worker.LogMessage("Error: 5 Ignore message " + msg);
                                 break;
                         }
                     }
                 }
-                else if (this._is_session)
+                else if (this.is_session)
                 {
-                    if (this.SessionId == null)
+                    if (this.sessionId == null)
                     {
-                        this._worker.LogMessage($"Warning:ServerClient*{this._scid} Wait for Upgrade To Session ");
+                        this.worker.LogMessage($"Warning:ServerClient*{this.scid} Wait for Upgrade To Session ");
 
-                        while (this.SessionId == null)
+                        while (this.sessionId == null)
                         {
-                            if (await this._cts_wait_upgrade.Token.WaitForSignalSettedAsync(28000))  //check the presession closed or not every 28 seconds
+                            if (await this.cts_wait_upgrade.Token.WaitForSignalSettedAsync(28000))  //check the presession closed or not every 28 seconds
                             {
-                                if (this.SessionId != null)
+                                if (this.sessionId != null)
                                 {
                                     break;  //OK, session attached.
                                 }
@@ -713,49 +713,49 @@
                             //	throw new SocketException(995);
                             //}
 
-                            if (!this._socket.Poll(0, SelectMode.SelectRead)) //WORKS..
+                            if (!this.socket.Poll(0, SelectMode.SelectRead)) //WORKS..
                             {
                                 continue;
                             }
 
-                            if (this._socket.Available == 0)
+                            if (this.socket.Available == 0)
                             {
-                                this._worker.LogMessage("Warning:presession exit!");
+                                this.worker.LogMessage("Warning:presession exit!");
                                 throw new SocketException(995);
                             }
 
                             //_worker.LogMessage("Warning:presession send message before upgrade ?"+_socket.Available);
-                            if (!this._cts_wait_upgrade.IsCancellationRequested)
+                            if (!this.cts_wait_upgrade.IsCancellationRequested)
                             {
                                 //TODO:not locked/sync, not so safe it the presession is upgrading
-                                var msg = await CommandMessage.ReadFromSocketAsync(this._socket);
+                                var msg = await CommandMessage.ReadFromSocketAsync(this.socket);
                                 if (msg.Name == "_ping_")
                                 {
                                     byte[] resp = new CommandMessage("_ping_result_").Pack();
-                                    await this._socket.SendAsync(resp, SocketFlags.None);
+                                    await this.socket.SendAsync(resp, SocketFlags.None);
                                 }
                                 else
                                 {
-                                    this._worker.LogMessage("Warning:presession unexpected msg : " + msg);
+                                    this.worker.LogMessage("Warning:presession unexpected msg : " + msg);
                                 }
                             }
                         }
 
-                        this._worker.LogMessage($"Warning:ServerClient*{this._scid} SessionId:" + this.SessionId);
+                        this.worker.LogMessage($"Warning:ServerClient*{this.scid} SessionId:" + this.sessionId);
                     }
 
                     int waitMapTimes = 0;
 
                 TryGetMap:
-                    if (this._attachedSession != null)
+                    if (this.attachedSession != null)
                     {
-                        this._worker.LogMessage($"ServerClient*{this._scid} use attached Session : {this.SessionId} *{waitMapTimes}");
-                        await this._attachedSession.UseThisSocketAsync(this._sread, this._swrite);
+                        this.worker.LogMessage($"ServerClient*{this.scid} use attached Session : {this.sessionId} *{waitMapTimes}");
+                        await this.attachedSession.UseThisSocketAsync(this.sread, this.swrite);
                     }
-                    else if (this._worker.sessionMap.TryGetValue(this.SessionId, out var session))
+                    else if (this.worker.sessionMap.TryGetValue(this.sessionId, out var session))
                     {
-                        this._worker.LogMessage($"ServerClient*{this._scid} session server ok : {this.SessionId} *{waitMapTimes}");
-                        await session.UseThisSocketAsync(this._sread, this._swrite);
+                        this.worker.LogMessage($"ServerClient*{this.scid} session server ok : {this.sessionId} *{waitMapTimes}");
+                        await session.UseThisSocketAsync(this.sread, this.swrite);
                     }
                     else
                     {
@@ -766,8 +766,8 @@
                             goto TryGetMap;
                         }
 
-                        this._worker.LogMessage($"Warning:ServerClient*{this._scid} session not found : {this.SessionId}");
-                        throw new Exception($"ServerClient*{this._scid} session not found : {this.SessionId}");
+                        this.worker.LogMessage($"Warning:ServerClient*{this.scid} session not found : {this.sessionId}");
+                        throw new Exception($"ServerClient*{this.scid} session not found : {this.sessionId}");
                     }
                 }
                 else
@@ -781,45 +781,45 @@
             }
             catch (Exception x)
             {
-                this._worker.OnError(x);
+                this.worker.OnError(x);
             }
             finally
             {
-                this._worker.RemoveClientOrSession(this);
+                this.worker.RemoveClientOrSession(this);
             }
 
-            this._worker.LogMessage($"ServerClient*{this._scid} WorkAsync END " + this.SessionId);
+            this.worker.LogMessage($"ServerClient*{this.scid} WorkAsync END " + this.sessionId);
         }
 
-        private TcpMapServerSession _attachedSession;
+        private TcpMapServerSession attachedSession;
 
         internal void AttachToSession (TcpMapServerSession session)
         {
-            this._attachedSession = session;
-            this._cts_wait_upgrade.Cancel();
+            this.attachedSession = session;
+            this.cts_wait_upgrade.Cancel();
         }
 
         internal void TestAlive () => _ = Task.Run(async delegate
                                       {
                                           try
                                           {
-                                              await this._swrite.WriteAsync(new CommandMessage("_ping_result_").Pack());
+                                              await this.swrite.WriteAsync(new CommandMessage("_ping_result_").Pack());
                                           }
                                           catch (Exception x)
                                           {
-                                              this._worker.OnError(x);
+                                              this.worker.OnError(x);
                                               this.Stop();
                                           }
                                       });
 
         internal void Stop ()
         {
-            this._cts_wait_upgrade?.Cancel();
-            if (this._socket != null)
+            this.cts_wait_upgrade?.Cancel();
+            if (this.socket != null)
             {
                 try
                 {
-                    this._socket.CloseSocket();
+                    this.socket.CloseSocket();
                 }
                 catch (Exception x)
                 {
@@ -830,7 +830,7 @@
 
         private class RequestItem
         {
-            internal CommandMessage Response;
+            internal CommandMessage response;
             internal CancellationTokenSource cts = new CancellationTokenSource();
         }
 
@@ -858,22 +858,16 @@
             this.reqmap.TryAdd(reqid, ritem);
             try
             {
-                this._worker.LogMessage("TcpMapServerClient sending #" + reqid + " : " + msg);
+                this.worker.LogMessage("TcpMapServerClient sending #" + reqid + " : " + msg);
 
-                await this._swrite.WriteAsync(msg.Pack());
-                await this._swrite.FlushAsync();
+                await this.swrite.WriteAsync(msg.Pack());
+                await this.swrite.FlushAsync();
 
-                if (!await ritem.cts.Token.WaitForSignalSettedAsync(timeout))//TODO:const
-                {
-                    throw new Exception($"request timeout #{reqid} '{msg}'");
-                }
-
-                if (ritem.Response == null)
-                {
-                    throw new Exception($"No Response ? ");
-                }
-
-                return ritem.Response.Args[1] == "Error" ? throw new Exception("Command Failed.") : ritem.Response;
+                return !await ritem.cts.Token.WaitForSignalSettedAsync(timeout)
+                    ? throw new Exception($"request timeout #{reqid} '{msg}'")
+                    : ritem.response == null
+                    ? throw new Exception($"No Response ? ")
+                    : ritem.response.Args[1] == "Error" ? throw new Exception("Command Failed.") : ritem.response;
             }
             finally
             {

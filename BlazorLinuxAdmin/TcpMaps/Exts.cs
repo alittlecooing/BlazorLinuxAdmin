@@ -18,8 +18,8 @@
             sock.NoDelay = true;
             sock.ReceiveTimeout = 0;
             sock.SendTimeout = 12000;
-            sock.SendBufferSize = TcpMapService.DefaultBufferSize;
-            sock.ReceiveBufferSize = TcpMapService.DefaultBufferSize * 2;
+            sock.SendBufferSize = TcpMapService.defaultBufferSize;
+            sock.ReceiveBufferSize = TcpMapService.defaultBufferSize * 2;
         }
 
         public static async Task ConnectWithTimeoutAsync (this Socket socket, string host, int port, int timeout)
@@ -141,20 +141,20 @@
         private readonly Socket sock;
         public SimpleSocketStream (Socket socket) => this.sock = socket ?? throw new ArgumentNullException(nameof(socket));
 
-        public int DebugTotalRead = 0;
-        public int DebugTotalWrite = 0;
+        public int debugTotalRead = 0;
+        public int debugTotalWrite = 0;
 
         public override async Task<int> ReadAsync (byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
             ArraySegment<byte> seg = new ArraySegment<byte>(buffer, offset, count);
             int rc = await this.sock.ReceiveAsync(seg, SocketFlags.None, cancellationToken);//SocketFlags.Partial not OK in Linu
-            this.DebugTotalRead += rc;
+            this.debugTotalRead += rc;
             return rc;
         }
 
         public override async Task WriteAsync (byte[] buffer, int offset, int count, CancellationToken cancellationToken)
         {
-            this.DebugTotalWrite += count;
+            this.debugTotalWrite += count;
             ArraySegment<byte> seg = new ArraySegment<byte>(buffer, offset, count);
             await this.sock.SendAsync(seg, SocketFlags.None, cancellationToken);//SocketFlags.Partial not OK in Linu
         }
@@ -162,7 +162,7 @@
         public override async ValueTask<int> ReadAsync (Memory<byte> buffer, CancellationToken cancellationToken = default)
         {
             int rc = await this.sock.ReceiveAsync(buffer, SocketFlags.Partial, cancellationToken);
-            this.DebugTotalRead += rc;
+            this.debugTotalRead += rc;
             return rc;
         }
 

@@ -19,14 +19,14 @@
             TcpMapService.OnError(x);
         }
 
-        public ConcurrentQueue<string> LogMessages = new ConcurrentQueue<string>();
+        public ConcurrentQueue<string> logMessages = new ConcurrentQueue<string>();
 
         public void LogMessage (string msg)
         {
-            this.LogMessages.Enqueue(msg);
-            while (this.LogMessages.Count > 200)
+            this.logMessages.Enqueue(msg);
+            while (this.logMessages.Count > 200)
             {
-                this.LogMessages.TryDequeue(out _);
+                this.logMessages.TryDequeue(out _);
             }
             TcpMapService.LogMessage(msg);
         }
@@ -220,9 +220,9 @@
 
     public class CommandMessage
     {
-        public const int MAX_PACKAGE_SIZE = 1024 * 1024;
-        public const string STR_H8 = "CMDMSGv1";
-        public const string END_H8 = "ENDMSGv1";
+        public const int max_package_size = 1024 * 1024;
+        public const string str_h8 = "CMDMSGv1";
+        public const string end_h8 = "ENDMSGv1";
         public string Name { get; set; }
         public Memory<byte> Data { get; set; }
         public string[] Args { get; set; }
@@ -269,12 +269,12 @@
                 hcount += rc;
             }
             string h8 = System.Text.Encoding.ASCII.GetString(header, 0, 8);
-            if (STR_H8 != h8)
+            if (str_h8 != h8)
             {
                 throw new Exception("Invalid header : " + h8);
             }
             uint size = BitConverter.ToUInt32(header, 8);
-            if (size > MAX_PACKAGE_SIZE)
+            if (size > max_package_size)
             {
                 throw new Exception("reach MAX_PACKAGE_SIZE:" + size);
             }
@@ -297,12 +297,12 @@
             byte[] header = new byte[12];
             ms.Read(header, 0, 12);
             string h8 = System.Text.Encoding.ASCII.GetString(header, 0, 8);
-            if (STR_H8 != h8)
+            if (str_h8 != h8)
             {
                 throw new Exception("Invalid header : " + h8);
             }
             uint size = BitConverter.ToUInt32(header, 8);
-            return size > MAX_PACKAGE_SIZE ? throw new Exception("reach MAX_PACKAGE_SIZE:" + size) : UnpackRest(ms);
+            return size > max_package_size ? throw new Exception("reach MAX_PACKAGE_SIZE:" + size) : UnpackRest(ms);
         }
 
         internal static CommandMessage UnpackRest (MemoryStream ms)
@@ -338,7 +338,7 @@
             }
 
             string endstr = br.ReadString();
-            return endstr != END_H8 ? throw new Exception("Invalid footer : " + endstr) : msg;
+            return endstr != end_h8 ? throw new Exception("Invalid footer : " + endstr) : msg;
         }
 
         public byte[] Pack ()    //TODO:performance return Memory<byte>
@@ -359,7 +359,7 @@
 
             MemoryStream ms = new MemoryStream(capacity);//TODO:performance dont use MemoryStream
             BinaryWriter br = new BinaryWriter(ms); //TODO:performance dont use BinaryWriter/BinaryReader
-            byte[] h8 = System.Text.Encoding.ASCII.GetBytes(STR_H8);
+            byte[] h8 = System.Text.Encoding.ASCII.GetBytes(str_h8);
             br.Write(h8);
             br.Write(0);//place holder
             br.Write((this.Name == null ? "0" : "1") + (this.Data.IsEmpty ? "0" : "1") + (this.Args == null ? "0" : "1"));
@@ -383,10 +383,10 @@
                     }
                 }
             }
-            br.Write(END_H8);
+            br.Write(end_h8);
 
             byte[] data = ms.ToArray();
-            if (data.Length > MAX_PACKAGE_SIZE)
+            if (data.Length > max_package_size)
             {
                 throw new Exception("reach MAX_PACKAGE_SIZE:" + data.Length);
             }

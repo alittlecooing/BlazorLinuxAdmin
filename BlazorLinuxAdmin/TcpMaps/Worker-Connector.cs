@@ -15,7 +15,7 @@
 
         public bool IsListened { get; private set; }
 
-        private TcpListener _listener;
+        private TcpListener listener;
         private CancellationTokenSource cts;
 
         public void StartWork ()
@@ -47,15 +47,15 @@
 
                 int againTimeout = 500;
             StartAgain:
-                this._listener = new TcpListener(IPAddress.Any, this.Connector.LocalPort);
+                this.listener = new TcpListener(IPAddress.Any, this.Connector.LocalPort);
                 try
                 {
-                    this._listener.Start();
+                    this.listener.Start();
                 }
                 catch (Exception x)
                 {
                     this.OnError(x);
-                    this._listener = null;
+                    this.listener = null;
                     this.cts = new CancellationTokenSource();
                     if (!this.IsStarted)
                     {
@@ -77,7 +77,7 @@
                 this.IsListened = true;
                 while (this.IsStarted)
                 {
-                    var socket = await this._listener.AcceptSocketAsync();
+                    var socket = await this.listener.AcceptSocketAsync();
 
                     this.LogMessage("Warning:accept socket " + socket.LocalEndPoint + "," + socket.RemoteEndPoint + " at " + DateTime.Now.ToString("HH:mm:ss.fff"));
 
@@ -115,32 +115,31 @@
             this.IsStarted = false;
             this.IsListened = false;
 
-            if (this._listener != null)
+            if (this.listener != null)
             {
                 try
                 {
-                    this._listener.Stop();
+                    this.listener.Stop();
                 }
                 catch (Exception x)
                 {
                     this.OnError(x);
                 }
-                this._listener = null;
+                this.listener = null;
             }
         }
 
-        private DateTime _stopUseRouterClientPortUntil;
-        private readonly DateTime _stopUseUDPPunchingUntil;
+        private DateTime stopUseRouterClientPortUntil;
 
         private async Task ProcessSocketAsync (Socket tcpSocket)
         {
         TryAgain:
             string connmode = null;
-            if (this.Connector.UseRouterClientPort && DateTime.Now > this._stopUseRouterClientPortUntil)
+            if (this.Connector.UseRouterClientPort && DateTime.Now > this.stopUseRouterClientPortUntil)
             {
                 connmode = "RCP";
             }
-            else if (this.Connector.UseUDPPunching && DateTime.Now > this._stopUseRouterClientPortUntil)
+            else if (this.Connector.UseUDPPunching && DateTime.Now > this.stopUseRouterClientPortUntil)
             {
                 connmode = "UDP";
             }
@@ -241,7 +240,7 @@
                 if (port < 1)
                 {
                     this.LogMessage("Error:Invalid configuration , remote-client-side don't provide RouterClientPort , stop use RCP for 1min");
-                    this._stopUseRouterClientPortUntil = DateTime.Now.AddSeconds(60);
+                    this.stopUseRouterClientPortUntil = DateTime.Now.AddSeconds(60);
                     goto TryAgain;//TODO: reuse the serverSocket and switch to another mode 
                 }
 
@@ -291,10 +290,10 @@
             await session.DirectWorkAsync(_sread, _swrite);
         }
 
-        private string _lastnat;
-        private UDPClientListener _lastudp;
-        private DateTime _timeudp;
-        private CancellationTokenSource _ctsudpnew;
+        private string lastnat;
+        private UDPClientListener lastudp;
+        private DateTime timeudp;
+        private CancellationTokenSource ctsudpnew;
 
         private async Task<KeyValuePair<string, UDPClientListener>> GetUdpClientAsync ()
         {
@@ -304,26 +303,26 @@
             }
 
         TryAgain:
-            if (this._lastudp != null && DateTime.Now - this._timeudp < TimeSpan.FromSeconds(8))
+            if (this.lastudp != null && DateTime.Now - this.timeudp < TimeSpan.FromSeconds(8))
             {
                 lock (this)
                 {
-                    return new KeyValuePair<string, UDPClientListener>(this._lastnat, this._lastudp);
+                    return new KeyValuePair<string, UDPClientListener>(this.lastnat, this.lastudp);
                 }
             }
 
             bool ctsCreated = false;
-            CancellationTokenSource cts = this._ctsudpnew;
+            CancellationTokenSource cts = this.ctsudpnew;
             if (cts == null)
             {
                 lock (this)
                 {
-                    if (this._ctsudpnew == null)
+                    if (this.ctsudpnew == null)
                     {
-                        this._ctsudpnew = new CancellationTokenSource();
+                        this.ctsudpnew = new CancellationTokenSource();
                         ctsCreated = true;
                     }
-                    cts = this._ctsudpnew;
+                    cts = this.ctsudpnew;
                 }
             }
 
@@ -341,9 +340,9 @@
 
                 lock (this)
                 {
-                    this._lastnat = kvp.Key;
-                    this._lastudp = kvp.Value;
-                    this._timeudp = DateTime.Now;
+                    this.lastnat = kvp.Key;
+                    this.lastudp = kvp.Value;
+                    this.timeudp = DateTime.Now;
                 }
 
                 return kvp;
@@ -353,7 +352,7 @@
                 lock (this)
                 {
                     cts.Cancel();
-                    this._ctsudpnew = null;
+                    this.ctsudpnew = null;
                 }
             }
         }
@@ -392,10 +391,10 @@
             }
 
             this.IsStarted = false;
-            if (this._listener != null)
+            if (this.listener != null)
             {
-                var lis = this._listener;
-                this._listener = null;
+                var lis = this.listener;
+                this.listener = null;
                 lis.Stop();
             }
             if (this.cts != null)

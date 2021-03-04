@@ -8,12 +8,12 @@
 
     internal class TcpMapServerSession : TcpMapBaseSession
     {
-        private Stream _stream;
-        private string _sid;
+        private readonly Stream stream;
+        private readonly string sid;
         public TcpMapServerSession (Stream stream, string sid)
         {
-            this._stream = stream;
-            this._sid = sid;
+            this.stream = stream;
+            this.sid = sid;
         }
 
         private readonly CancellationTokenSource cts_wait_work = new CancellationTokenSource();
@@ -22,7 +22,7 @@
         {
             try
             {
-                await this.WorkAsync(this._stream);
+                await this.WorkAsync(this.stream);
             }
             finally
             {
@@ -30,22 +30,22 @@
             }
         }
 
-        private Stream _sread;
-        private Stream _swrite;
+        private Stream sread;
+        private Stream swrite;
         private readonly CancellationTokenSource cts_wait_attach = new CancellationTokenSource();
 
         private async Task WaitForAttachAsync ()
         {
             for (int i = 0; i < 100; i++)
             {
-                if (this._sread != null && this._swrite != null)
+                if (this.sread != null && this.swrite != null)
                 {
                     return;
                 }
 
                 if (await this.cts_wait_attach.Token.WaitForSignalSettedAsync(100))
                 {
-                    Debug.Assert(this._sread != null && this._swrite != null);
+                    Debug.Assert(this.sread != null && this.swrite != null);
                     return;
                 }
             }
@@ -54,13 +54,13 @@
 
         protected override async Task<CommandMessage> ReadMessageAsync ()
         {
-            if (this._sread == null)
+            if (this.sread == null)
             {
                 await this.WaitForAttachAsync();
             }
 
         ReadAgain:
-            var msg = await CommandMessage.ReadFromStreamAsync(this._sread);
+            var msg = await CommandMessage.ReadFromStreamAsync(this.sread);
             if (msg == null || msg.Name == "data")
             {
                 return msg;
@@ -71,7 +71,7 @@
             switch (msg.Name)
             {
                 case "_ping_":
-                    await this._swrite.WriteAsync(new CommandMessage("_ping_result_").Pack());
+                    await this.swrite.WriteAsync(new CommandMessage("_ping_result_").Pack());
                     break;
                 case "_ping_result_":
                     break;
@@ -84,18 +84,18 @@
 
         protected override async Task WriteMessageAsync (CommandMessage msg)
         {
-            if (this._swrite == null)
+            if (this.swrite == null)
             {
                 await this.WaitForAttachAsync();
             }
 
-            await this._swrite.WriteAsync(msg.Pack());
+            await this.swrite.WriteAsync(msg.Pack());
         }
 
         public async Task UseThisSocketAsync (Stream sread, Stream swrite)
         {
-            this._sread = sread;
-            this._swrite = swrite;
+            this.sread = sread;
+            this.swrite = swrite;
             this.cts_wait_attach.Cancel();
             await this.cts_wait_work.Token.WaitForSignalSettedAsync(-1);
         }

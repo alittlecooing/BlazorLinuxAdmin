@@ -1,24 +1,26 @@
-﻿using System;
-using System.Diagnostics;
-using System.IO;
-using System.Security.Cryptography;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace BlazorLinuxAdmin.TcpMaps.Crypto
+﻿namespace BlazorLinuxAdmin.TcpMaps.Crypto
 {
+    using System;
+    using System.Diagnostics;
+    using System.IO;
+    using System.Security.Cryptography;
+    using System.Threading;
+    using System.Threading.Tasks;
+
     public abstract class BlockCryptoStream : Stream
     {
-        private const int MAX_BLOCK_SIZE = 1024 * 256;
+        private const int _max_block_size = 1024 * 256;
 
-        protected Stream _inner;
-        protected TripleDES _tdes;
+        protected Stream inner;
+        protected TripleDES tdes;
 
         public static BlockCryptoStream CreateEncryptWriter (Stream stream, TripleDES tdes)
         {
-            var writer = new Writer();
-            writer._inner = stream;
-            writer._tdes = tdes;
+            var writer = new Writer
+            {
+                inner = stream,
+                tdes = tdes
+            };
             return writer;
         }
 
@@ -27,11 +29,11 @@ namespace BlazorLinuxAdmin.TcpMaps.Crypto
             public override bool CanWrite => true;
             public override async Task WriteAsync (byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
-                if (count > MAX_BLOCK_SIZE)
+                if (count > _max_block_size)
                 {
-                    for (int start = 0; start < count; start += MAX_BLOCK_SIZE)
+                    for (int start = 0; start < count; start += _max_block_size)
                     {
-                        int len = Math.Min(MAX_BLOCK_SIZE, count - start);
+                        int len = Math.Min(_max_block_size, count - start);
                         await this.WriteAsync(buffer, offset + start, len, cancellationToken);
                     }
                     return;
@@ -47,17 +49,14 @@ namespace BlazorLinuxAdmin.TcpMaps.Crypto
                     bs.Write(cntbytes);
                     bs.Write(cntbytes);//use for rest size
 
-                    using var trans = this._tdes.CreateEncryptor();
-                    using (CryptoStream cs = new CryptoStream(bs, trans, CryptoStreamMode.Write))
-                    {
-                        cs.Write(cntbytes);//prefix 
-                        cs.Write(buffer, offset, count);
-                        Array.Reverse(cntbytes);
-                        cs.FlushFinalBlock();
+                    using var trans = this.tdes.CreateEncryptor();
+                    using CryptoStream cs = new CryptoStream(bs, trans, CryptoStreamMode.Write);
+                    cs.Write(cntbytes);//prefix 
+                    cs.Write(buffer, offset, count);
+                    Array.Reverse(cntbytes);
+                    cs.FlushFinalBlock();
 
-                        outputlen = (int)bs.Position;
-                    }
-
+                    outputlen = (int)bs.Position;
                 }
 
                 Buffer.BlockCopy(BitConverter.GetBytes(outputlen), 0, outputdata, 8, 4);
@@ -74,16 +73,17 @@ namespace BlazorLinuxAdmin.TcpMaps.Crypto
 
                 //Console.WriteLine("MemoryStream : " + BitConverter.ToString(outputdata, 0, outputlen));
 
-                await this._inner.WriteAsync(outputdata, 0, outputlen, cancellationToken);
+                await this.inner.WriteAsync(outputdata, 0, outputlen, cancellationToken);
             }
-
         }
 
         public static BlockCryptoStream CreateDecryptReader (Stream stream, TripleDES tdes)
         {
-            var reader = new Reader();
-            reader._inner = stream;
-            reader._tdes = tdes;
+            var reader = new Reader
+            {
+                inner = stream,
+                tdes = tdes
+            };
             return reader;
         }
 
@@ -91,44 +91,39 @@ namespace BlazorLinuxAdmin.TcpMaps.Crypto
         {
             public override bool CanRead => true;
 
-            private int _blockoffset;
-            private byte[] _blockbytes;
-            private int _blocktimes = 0;
-            private int _totalrc;
-            private int _totalrc2;
+            private int blockoffset;
+            private byte[] blockbytes;
+            private int blocktimes = 0;
+            private int totalrc;
+            private int totalrc2;
 
             public override async Task<int> ReadAsync (byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
-                if (this._blockbytes == null)
+                if (this.blockbytes == null)
                 {
-                    this._blocktimes++;
+                    this.blocktimes++;
 
                     byte[] header = new byte[12];
                     int hcount = 0;
                     while (hcount < 12)
                     {
-                        int hrc = await this._inner.ReadAsync(header, hcount, 12 - hcount);
+                        int hrc = await this.inner.ReadAsync(header, hcount, 12 - hcount);
                         if (hrc == 0)
                         {
-                            if (hcount == 0)
-                            {
-                                return 0;
-                            }
-
-                            throw new Exception("Unexpected END");
+                            return hcount == 0 ? 0 : throw new Exception("Unexpected END");
                         }
                         hcount += hrc;
-                        this._totalrc2 += hrc;
+                        this.totalrc2 += hrc;
                     }
 
                     int size = BitConverter.ToInt32(header);
 
                     if (header[0] != header[7] || header[1] != header[6] || header[2] != header[5] || header[3] != header[4])
                     {
-                        if (System.Text.Encoding.ASCII.GetString(header) == CommandMessage.STR_H8)
+                        if (System.Text.Encoding.ASCII.GetString(header) == CommandMessage.str_h8)
                         {
                             byte[] sizebytes = new byte[4];
-                            int hrc = await this._inner.ReadAsync(sizebytes, 0, 4);
+                            int hrc = await this.inner.ReadAsync(sizebytes, 0, 4);
                             if (hrc != 4)
                             {
                                 throw new Exception("test failed");
@@ -139,7 +134,7 @@ namespace BlazorLinuxAdmin.TcpMaps.Crypto
                             int packstart = 0;
                             while (packstart < packsize)
                             {
-                                hrc = await this._inner.ReadAsync(packdata, packstart, packsize - packstart);
+                                hrc = await this.inner.ReadAsync(packdata, packstart, packsize - packstart);
                                 if (hrc == 0)
                                 {
                                     throw new Exception("test failed");
@@ -150,23 +145,21 @@ namespace BlazorLinuxAdmin.TcpMaps.Crypto
                             Console.WriteLine("Not Encrypted Data : " + CommandMessage.UnpackRest(new MemoryStream(packdata)));
                         }
 
-                        throw new Exception("Invalid size header #" + this._blocktimes + " , " + size + " , " + this._totalrc);
+                        throw new Exception("Invalid size header #" + this.blocktimes + " , " + size + " , " + this.totalrc);
                     }
-
 
                     int totalsize = BitConverter.ToInt32(header, 8);
 
-
-                    if (size < 1 || size > MAX_BLOCK_SIZE)
+                    if (size < 1 || size > _max_block_size)
                     {
-                        throw new Exception("Invalid size : #" + this._blocktimes + " , " + size + " , " + this._totalrc);
+                        throw new Exception("Invalid size : #" + this.blocktimes + " , " + size + " , " + this.totalrc);
                     }
 
                     byte[] rawBlock = new byte[totalsize - 12];
                     int rawStart = 0;
                     while (rawStart < rawBlock.Length)
                     {
-                        int hrc = await this._inner.ReadAsync(rawBlock, rawStart, rawBlock.Length - rawStart, cancellationToken);
+                        int hrc = await this.inner.ReadAsync(rawBlock, rawStart, rawBlock.Length - rawStart, cancellationToken);
                         if (hrc == 0)
                         {
                             throw new Exception("Unexpected END");
@@ -175,58 +168,48 @@ namespace BlazorLinuxAdmin.TcpMaps.Crypto
                         rawStart += hrc;
                     }
 
-                    this._blockbytes = new byte[size + 4];//4 for prefix
-                    MemoryStream msout = new MemoryStream(this._blockbytes);
-                    using var trans = this._tdes.CreateDecryptor();
+                    this.blockbytes = new byte[size + 4];//4 for prefix
+                    MemoryStream msout = new MemoryStream(this.blockbytes);
+                    using var trans = this.tdes.CreateDecryptor();
                     using (CryptoStream cs = new CryptoStream(new MemoryStream(rawBlock), trans, CryptoStreamMode.Read))
                     {
                         cs.CopyTo(msout);
-                        Debug.Assert(msout.Position == this._blockbytes.Length);
+                        Debug.Assert(msout.Position == this.blockbytes.Length);
                     }
 
-                    if (header[0] != this._blockbytes[3] || header[1] != this._blockbytes[2] || header[2] != this._blockbytes[1] || header[3] != this._blockbytes[0])
+                    if (header[0] != this.blockbytes[3] || header[1] != this.blockbytes[2] || header[2] != this.blockbytes[1] || header[3] != this.blockbytes[0])
                     {
-                        throw new Exception("Invalid size prefix #" + this._blocktimes + " , " + size + " , " + this._totalrc);
+                        throw new Exception("Invalid size prefix #" + this.blocktimes + " , " + size + " , " + this.totalrc);
                     }
 
-                    this._blockoffset = 4;
-
+                    this.blockoffset = 4;
                 }
 
-                int maxrc = Math.Min(count, this._blockbytes.Length - this._blockoffset);
+                int maxrc = Math.Min(count, this.blockbytes.Length - this.blockoffset);
 
-                Buffer.BlockCopy(this._blockbytes, this._blockoffset, buffer, offset, maxrc);
+                Buffer.BlockCopy(this.blockbytes, this.blockoffset, buffer, offset, maxrc);
 
-                this._blockoffset += maxrc;
+                this.blockoffset += maxrc;
 
-                this._totalrc += maxrc;
-                this._totalrc2 += maxrc;
+                this.totalrc += maxrc;
+                this.totalrc2 += maxrc;
 
                 //Console.WriteLine("Readed : #" + _blocktimes + " , " + maxrc + "/" + count + " , " + _blockoffset + "/" + _blockbytes.Length + " , " + _totalrc + "/" + _totalrc2);
 
-                if (this._blockoffset == this._blockbytes.Length)
+                if (this.blockoffset == this.blockbytes.Length)
                 {
-                    this._blockbytes = null;
+                    this.blockbytes = null;
                 }
-
                 return maxrc;
-
             }
         }
 
-
-
         #region BasicStreamOverride
-
-
         public override void Flush ()
         {
+        }
 
-        }
-        public override Task FlushAsync (CancellationToken cancellationToken)
-        {
-            return Task.CompletedTask;
-        }
+        public override Task FlushAsync (CancellationToken cancellationToken) => Task.CompletedTask;
 
         public override bool CanRead => false;
 
@@ -238,28 +221,13 @@ namespace BlazorLinuxAdmin.TcpMaps.Crypto
 
         public override long Position { get => throw new InvalidOperationException(); set => throw new InvalidOperationException(); }
 
+        public override int Read (byte[] buffer, int offset, int count) => throw new InvalidOperationException();
 
-        public override int Read (byte[] buffer, int offset, int count)
-        {
-            throw new InvalidOperationException();
-        }
+        public override long Seek (long offset, SeekOrigin origin) => throw new InvalidOperationException();
 
-        public override long Seek (long offset, SeekOrigin origin)
-        {
-            throw new InvalidOperationException();
-        }
+        public override void SetLength (long value) => throw new InvalidOperationException();
 
-        public override void SetLength (long value)
-        {
-            throw new InvalidOperationException();
-        }
-
-        public override void Write (byte[] buffer, int offset, int count)
-        {
-            throw new InvalidOperationException();
-        }
-
+        public override void Write (byte[] buffer, int offset, int count) => throw new InvalidOperationException();
         #endregion
-
     }
 }

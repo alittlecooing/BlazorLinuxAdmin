@@ -13,7 +13,7 @@
 
     public static class TcpMapService
     {
-        public static int DefaultBufferSize = 1024 * 128;
+        public static int defaultBufferSize = 1024 * 128;
         public static string DataFolder { get; set; }
         public static bool IsServiceAdded { get; private set; }
         //public static bool IsServiceMapped { get; private set; }
@@ -36,15 +36,15 @@
         }
 
         public static event Action<Exception> ErrorOccurred;
-        public static ConcurrentQueue<string> LogMessages = new ConcurrentQueue<string>();
+        public static ConcurrentQueue<string> logMessages = new ConcurrentQueue<string>();
 
         public static void LogMessage (string msg)
         {
             Console.WriteLine(msg);
-            LogMessages.Enqueue(msg);
-            while (LogMessages.Count > 200)
+            logMessages.Enqueue(msg);
+            while (logMessages.Count > 200)
             {
-                LogMessages.TryDequeue(out _);
+                logMessages.TryDequeue(out _);
             }
 
             MessageLogged?.Invoke(msg);

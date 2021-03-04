@@ -1,13 +1,12 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Net;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
-
-namespace BlazorLinuxAdmin.TcpMaps.UDP
+﻿namespace BlazorLinuxAdmin.TcpMaps.UDP
 {
+    using System;
+    using System.Collections.Generic;
+    using System.IO;
+    using System.Net;
+    using System.Text;
+    using System.Threading;
+    using System.Threading.Tasks;
 
     public interface IUDPServer
     {
@@ -19,44 +18,45 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
 
     public class UDPServerListener : IDisposable
     {
-        private IUDPServer _udp;
-        private Action<Stream, IPEndPoint> _onstream;
+        private readonly IUDPServer udp;
+        private readonly Action<Stream, IPEndPoint> onstream;
         public UDPServerListener (IUDPServer udp, Action<Stream, IPEndPoint> onstream)
         {
-            this._udp = udp;
-            this._onstream = onstream;
+            this.udp = udp;
+            this.onstream = onstream;
 
-            this._workthread = new Thread(this.ListenerWorkThread);//TODO:Convert to async
-            this._workthread.IsBackground = true;
-            this._workthread.Start();
+            this.workthread = new Thread(this.ListenerWorkThread)
+            {
+                IsBackground = true
+            };//TODO:Convert to async
+            this.workthread.Start();
             //_timer = new Timer(delegate
             //{
             //	OnTimer();
             //}, null, 20, 20);
         }
 
-        private Thread _workthread;
+        private Thread workthread;
 
         //Timer _timer;
         //void OnTimer()
         //{
         //}
 
-        private Dictionary<long, ServerStream> strmap = new Dictionary<long, ServerStream>();
+        private readonly Dictionary<long, ServerStream> strmap = new Dictionary<long, ServerStream>();
 
         private void ListenerWorkThread ()
         {
-            while (this._workthread != null)
+            while (this.workthread != null)
             {
                 try
                 {
                     //TODO: if not cached , and all stream closed , shutdown directly
 
-                    IPEndPoint ep;
-                    byte[] data = this._udp.Receive(TimeSpan.FromSeconds(90), out ep);
+                    byte[] data = this.udp.Receive(TimeSpan.FromSeconds(90), out IPEndPoint ep);
                     if (data == null)
                     {
-                        Console.WriteLine("_udp.Receive return null for a long time...; Shutdown..." + this._udp.LocalEndPoint);
+                        Console.WriteLine("_udp.Receive return null for a long time...; Shutdown..." + this.udp.LocalEndPoint);
                         this.Close();
                         return;
                     }
@@ -84,7 +84,7 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
                                 this.strmap[sid] = ss;
                             }
                         }
-                        if (ss.ConnectToken != udpc.token)
+                        if (ss.ConnectToken != udpc.Token)
                         {
                             ss.ForceClose();
                             lock (this.strmap)
@@ -110,7 +110,7 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
                         }
                         else
                         {
-                            this._udp.SendToClient(ep, UDPMeta.CreateSessionError(sid, "NotFound"));
+                            this.udp.SendToClient(ep, UDPMeta.CreateSessionError(sid, "NotFound"));
                         }
                     }
                 }
@@ -131,8 +131,7 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
             bool removed = false;
             lock (this.strmap)
             {
-                ServerStream ss;
-                if (this.strmap.TryGetValue(sid, out ss))
+                if (this.strmap.TryGetValue(sid, out ServerStream ss))
                 {
                     if (ss == stream)
                     {
@@ -143,7 +142,7 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
             }
             if (removed)
             {
-                this._udp.SendToClient(stream.RemoteEndPoint, UDPMeta.CreateSessionError(sid, "Reject"));
+                this.udp.SendToClient(stream.RemoteEndPoint, UDPMeta.CreateSessionError(sid, "Reject"));
             }
         }
 
@@ -152,69 +151,61 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
             public override long SessionId { get; internal set; }
             public IPEndPoint RemoteEndPoint { get; private set; }
 
-            private UDPServerListener _sl;
-            private CancellationTokenSource cts = new CancellationTokenSource();
-            private BufferedReader _reader;
+            private readonly UDPServerListener sl;
+            private readonly CancellationTokenSource cts = new CancellationTokenSource();
+            private BufferedReader reader;
 
             public ServerStream (UDPServerListener sl, long sid, IPEndPoint ep, UDPConnectJson cjson)
             {
-                this._sl = sl;
+                this.sl = sl;
                 this.SessionId = sid;
                 this.RemoteEndPoint = ep;
-                this.ConnectToken = cjson.token;
+                this.ConnectToken = cjson.Token;
             }
 
-            private UDPPackageType _waitfor = UDPPackageType.SessionConnect;
+            private UDPPackageType waitfor = UDPPackageType.SessionConnect;
             public string ConnectToken { get; private set; }
 
-            protected override void SendToPeer (byte[] data)
-            {
-                //Console.WriteLine("SendToPeer:" + UDPMeta.GetPackageType(data));
-                this._sl._udp.SendToClient(this.RemoteEndPoint, data);
-            }
-            protected override void OnPost (byte[] data)
-            {
-                this._reader.PushBuffer(data);
-            }
-            protected override void OnPost (byte[] data, int offset, int count)
-            {
-                this._reader.PushBuffer(data, offset, count);
-            }
+            protected override void SendToPeer (byte[] data) => this.sl.udp.SendToClient(this.RemoteEndPoint, data);
+
+            protected override void OnPost (byte[] data) => this.reader.PushBuffer(data);
+
+            protected override void OnPost (byte[] data, int offset, int count) => this.reader.PushBuffer(data, offset, count);
 
             public void Process (UDPPackageType pt, byte[] data)
             {
-                if (this._waitfor == pt)
+                if (this.waitfor == pt)
                 {
                     TcpMapService.LogMessage("UDPServer:" + pt);
 
                     if (pt == UDPPackageType.SessionConnect)
                     {
                         UDPConnectJson udpc = UDPConnectJson.Deserialize(Encoding.UTF8.GetString(data, 16, data.Length - 16));
-                        if (udpc.token != this.ConnectToken)
+                        if (udpc.Token != this.ConnectToken)
                         {
-                            this._sl.RejectConnect(this);
+                            this.sl.RejectConnect(this);
                             return;
                         }
                         byte[] buffprepair = UDPMeta.CreateSessionPrepair(this.SessionId, this.ConnectToken);
                         this.SendToPeer(buffprepair); this.SendToPeer(buffprepair);
-                        this._waitfor = UDPPackageType.SessionConfirm;
+                        this.waitfor = UDPPackageType.SessionConfirm;
                         return;
                     }
                     if (pt == UDPPackageType.SessionConfirm)
                     {
                         UDPConnectJson udpc = UDPConnectJson.Deserialize(Encoding.UTF8.GetString(data, 16, data.Length - 16));
-                        if (udpc.token != this.ConnectToken)
+                        if (udpc.Token != this.ConnectToken)
                         {
-                            this._sl.RejectConnect(this);
+                            this.sl.RejectConnect(this);
                             return;
                         }
                         byte[] buffready = UDPMeta.CreateSessionReady(this.SessionId, this.ConnectToken);
                         this.SendToPeer(buffready); this.SendToPeer(buffready);
-                        this._waitfor = UDPPackageType.SessionIdle;
-                        this._reader = new BufferedReader(this.cts.Token);
+                        this.waitfor = UDPPackageType.SessionIdle;
+                        this.reader = new BufferedReader(this.cts.Token);
                         ThreadPool.QueueUserWorkItem(delegate
                         {
-                            this._sl._onstream(this, this.RemoteEndPoint);
+                            this.sl.onstream(this, this.RemoteEndPoint);
                         });
                         return;
                     }
@@ -232,51 +223,37 @@ namespace BlazorLinuxAdmin.TcpMaps.UDP
 
             public override async Task<int> ReadAsync (byte[] buffer, int offset, int count, CancellationToken cancellationToken)
             {
-                int rc = await this._reader.ReadAsync(buffer, offset, count, cancellationToken);
+                int rc = await this.reader.ReadAsync(buffer, offset, count, cancellationToken);
                 //Console.WriteLine("UDPServerStream read " + rc);
                 return rc;
 
             }
-            public override int Read (byte[] buffer, int offset, int count)
-            {
-                throw new NotSupportedException();
-            }
-
-
+            public override int Read (byte[] buffer, int offset, int count) => throw new NotSupportedException();
 
             public override void Close ()
             {
                 this.cts.Cancel();
-                if (this._reader != null)
+                if (this.reader != null)
                 {
-                    this._reader.Dispose();
+                    this.reader.Dispose();
                 }
 
                 base.Close();
             }
 
-            public void ForceClose ()
-            {
-                this.Close();
-            }
-
+            public void ForceClose () => this.Close();
         }
-
 
         public void Close ()
         {
-            if (this._workthread != null)
+            if (this.workthread != null)
             {
                 //NOT SUPPORT ON THIS PLATFORM
                 //workthread.Abort();
-                this._workthread = null;
+                this.workthread = null;
             }
         }
 
-        public void Dispose ()
-        {
-            this.Close();
-        }
+        public void Dispose () => this.Close();
     }
-
 }

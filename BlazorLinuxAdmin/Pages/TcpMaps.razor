@@ -88,7 +88,7 @@
 @TcpMapService.IsServiceAdded
 @TcpMapService.IsServiceRunning
 @TcpMapService.IsUDPServiceRunning
-@TcpMapService.LogMessages.LastOrDefault();
+@TcpMapService.logMessages.LastOrDefault();
 
 
 <hr />
@@ -149,7 +149,7 @@
 					}
 				</td>
 				<td>
-					@worker._presessions.Count
+					@worker.presessions.Count
 					/
 					@worker.sessionMap.Count
 				</td>
@@ -158,7 +158,7 @@
 						@worker.Error?.Message
 					</span>
 				</td>
-				<td @onclick="()=>ShowMessages(worker.LogMessages)">@worker.LogMessages.LastOrDefault()</td>
+				<td @onclick="()=>ShowMessages(worker.logMessages)">@worker.logMessages.LastOrDefault()</td>
 				<td>
 					<button @onclick="()=>EditWorker(worker)">Edit</button>
 				</td>
@@ -241,14 +241,14 @@
 					}
 				</td>
 				<td>
-					@worker._clients.Count/ @worker._presessions.Count , @worker._sessions.Count / @worker.sessionMap.Count
+					@worker.clients.Count/ @worker.presessions.Count , @worker.sessions.Count / @worker.sessionMap.Count
 				</td>
 				<td>
 					<span title="@worker.Error?.ToString()">
 						@worker.Error?.Message
 					</span>
 				</td>
-				<td @onclick="()=>ShowMessages(worker.LogMessages)">@worker.LogMessages.LastOrDefault()</td>
+				<td @onclick="()=>ShowMessages(worker.logMessages)">@worker.logMessages.LastOrDefault()</td>
 				<td>
 					<button @onclick="()=>EditWorker(worker)">Edit</button>
 				</td>
@@ -322,7 +322,7 @@
 						@worker.Error?.Message
 					</span>
 				</td>
-				<td @onclick="()=>ShowMessages(worker.LogMessages)">@worker.LogMessages.LastOrDefault()</td>
+				<td @onclick="()=>ShowMessages(worker.logMessages)">@worker.logMessages.LastOrDefault()</td>
 				<td>
 					<button @onclick="()=>EditWorker(worker)">Edit</button>
 				</td>

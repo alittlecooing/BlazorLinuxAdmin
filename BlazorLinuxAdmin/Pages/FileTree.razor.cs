@@ -5,56 +5,56 @@
 
     public partial class FileTree
     {
-        private PlusControl filelistpanel;
-        private PlusControl previewpanel;
+        private PlusControl fileListPanel;
+        private PlusControl previewPanel;
 
-        private void Initialize_bdt_div1 (BlazorDomTree bdt)
+        private void Initialize_Bdt_Div1 (BlazorDomTree bdt)
         {
-            string rootfolder = this.GetType().Assembly.Location;
-            if (rootfolder.StartsWith("/"))
+            string rootFolder = this.GetType().Assembly.Location;
+            if (rootFolder.StartsWith("/"))
             {
-                rootfolder = "/";       //unix
+                rootFolder = "/";       //unix
             }
             else
             {
-                rootfolder = rootfolder.Split(':')[0] + ":\\";       //windows
+                rootFolder = rootFolder.Split(':')[0] + ":\\";       //windows
             }
 
             PlusControl div1 = bdt.Root.Create("div style='width:33%'");
             PlusControl div2 = bdt.Root.Create("div style='width:33%;border-left:solid 1px gray;border-right:solid 1px gray;'");
             PlusControl div3 = bdt.Root.Create("div style='width:33%'");
 
-            div1.Create("div style='font-weight:bold'").InnerText("root " + rootfolder);
+            div1.Create("div style='font-weight:bold'").InnerText("root " + rootFolder);
             div1.Create("hr style='margin:0.5em 0'");
 
             div2.Create("div").InnerHTML("Files:");
             div2.Create("hr style='margin:0.5em 0'");
-            this.filelistpanel = div2.Create("div style='max-height:400px;overflow:auto'");
+            this.fileListPanel = div2.Create("div style='max-height:400px;overflow:auto'");
 
             div3.Create("div").InnerHTML("Preview:");
             div3.Create("hr style='margin:0.5em 0'");
-            this.previewpanel = div3.Create("div style='max-height:400px;overflow:auto'");
+            this.previewPanel = div3.Create("div style='max-height:400px;overflow:auto'");
 
-            this.CreateComponentTree(div1.Create("div style='max-height:400px;overflow:auto'"), rootfolder);
+            this.CreateComponentTree(div1.Create("div style='max-height:400px;overflow:auto'"), rootFolder);
 
-            this.ShowFileList(rootfolder);
+            this.ShowFileList(rootFolder);
         }
 
         private void ShowFileList (string folder)
         {
-            this.filelistpanel.ClearChildren();
-            this.previewpanel.ClearChildren();
+            this.fileListPanel.ClearChildren();
+            this.previewPanel.ClearChildren();
 
-            this.filelistpanel.Create("div style='font-weight:bold'").InnerText(System.IO.Path.Combine(folder));
+            this.fileListPanel.Create("div style='font-weight:bold'").InnerText(System.IO.Path.Combine(folder));
 
             string[] files = System.IO.Directory.GetFiles(folder).OrderBy(v => v).ToArray();
 
-            this.filelistpanel.Create("div").InnerText(files.Length + " files");
-            this.filelistpanel.Create("hr");
+            this.fileListPanel.Create("div").InnerText(files.Length + " files");
+            this.fileListPanel.Create("hr");
 
             if (files.Length == 0)
             {
-                this.filelistpanel.Create("div style='text-align:center;padding:3px;'").InnerText("<empty>");
+                this.fileListPanel.Create("div style='text-align:center;padding:3px;'").InnerText("<empty>");
                 return;
             }
 
@@ -62,7 +62,7 @@
             {
                 string filename = System.IO.Path.GetFileName(filepath);
 
-                PlusControl div = this.filelistpanel.Create("div style='padding:3px;cursor:default;'");
+                PlusControl div = this.fileListPanel.Create("div style='padding:3px;cursor:default;'");
                 div.InnerText(filename);
                 div.OnClick(delegate
                 {
@@ -73,25 +73,25 @@
 
         private void PreviewFile (string filepath)
         {
-            this.previewpanel.ClearChildren();
+            this.previewPanel.ClearChildren();
 
             string filename = System.IO.Path.GetFileName(filepath);
             var info = new System.IO.FileInfo(filepath);
-            this.previewpanel.Create("div style='font-weight:bold'").InnerText(filename);
-            this.previewpanel.Create("div").InnerText(info.Length.ToString("###,##0") + " bytes");
-            this.previewpanel.Create("hr");
+            this.previewPanel.Create("div style='font-weight:bold'").InnerText(filename);
+            this.previewPanel.Create("div").InnerText(info.Length.ToString("###,##0") + " bytes");
+            this.previewPanel.Create("hr");
 
             if (info.Length == 0)
             {
                 string text = System.IO.File.ReadAllText(filepath, System.Text.Encoding.UTF8);
                 if (string.IsNullOrEmpty(text))
                 {
-                    this.previewpanel.Create("div").InnerText("<empty/>");
+                    this.previewPanel.Create("div").InnerText("<empty/>");
                     return;
                 }
-                _ = this.previewpanel.Create("div").InnerText(text.Length + " chars");
-                this.previewpanel.Create("hr");
-                this.previewpanel.Create("div").InnerText(text);
+                _ = this.previewPanel.Create("div").InnerText(text.Length + " chars");
+                this.previewPanel.Create("hr");
+                this.previewPanel.Create("div").InnerText(text);
                 return;
             }
 
@@ -111,17 +111,17 @@
 
                 if (filedata == null || str.Where(c => IsValidChar(c)).Count() > str.Length * 3 / 4)
                 {
-                    this.previewpanel.Create("div style='white-space:pre-wrap;word-break:break-word;'").InnerText(str);
+                    this.previewPanel.Create("div style='white-space:pre-wrap;word-break:break-word;'").InnerText(str);
                 }
                 else
                 {
-                    this.previewpanel.Create("div").InnerText(filedata.Length + " bytes");
-                    this.previewpanel.Create("div").InnerText("no preview logic for this file yet.");
+                    this.previewPanel.Create("div").InnerText(filedata.Length + " bytes");
+                    this.previewPanel.Create("div").InnerText("no preview logic for this file yet.");
                 }
                 return;
             }
 
-            this.previewpanel.Create("div").InnerText("no preview logic for this file yet.");
+            this.previewPanel.Create("div").InnerText("no preview logic for this file yet.");
         }
 
         private static bool IsValidChar (char c)
@@ -142,6 +142,7 @@
                 case ' ':
                     return true;
             }
+
             //BlazorSession.Current.ConsoleLog(c + ":" + (int)c);
             return false;
         }

@@ -7,14 +7,14 @@
 
     internal class TcpMapConnectorSession : TcpMapBaseSession
     {
-        private readonly Stream _stream;
+        private readonly Stream stream;
 
-        public TcpMapConnectorSession (Stream stream) => this._stream = stream;
+        public TcpMapConnectorSession (Stream stream) => this.stream = stream;
 
-        public async Task WorkAsync () => await this.WorkAsync(this._stream);
+        public async Task WorkAsync () => await this.WorkAsync(this.stream);
 
-        private Stream _sread;
-        private Stream _swrite;
+        private Stream sread;
+        private Stream swrite;
 
         protected override async Task<CommandMessage> ReadMessageAsync ()
         {
@@ -31,7 +31,7 @@
 
                 try
                 {
-                    await this._swrite.WriteAsync(new CommandMessage("_ping_", "forread").Pack());
+                    await this.swrite.WriteAsync(new CommandMessage("_ping_", "forread").Pack());
                 }
                 catch (Exception x)
                 {
@@ -40,7 +40,7 @@
             });
             try
             {
-                msg = await CommandMessage.ReadFromStreamAsync(this._sread);
+                msg = await CommandMessage.ReadFromStreamAsync(this.sread);
             }
             finally
             {
@@ -57,7 +57,7 @@
             switch (msg.Name)
             {
                 case "_ping_":
-                    await this._swrite.WriteAsync(new CommandMessage("_ping_result_").Pack());
+                    await this.swrite.WriteAsync(new CommandMessage("_ping_result_").Pack());
                     break;
                 case "_ping_result_":
                     break;
@@ -68,12 +68,12 @@
             goto ReadAgain;
         }
 
-        protected override async Task WriteMessageAsync (CommandMessage msg) => await this._swrite.WriteAsync(msg.Pack());
+        protected override async Task WriteMessageAsync (CommandMessage msg) => await this.swrite.WriteAsync(msg.Pack());
 
         public async Task DirectWorkAsync (Stream sread, Stream swrite)
         {
-            this._sread = sread;
-            this._swrite = swrite;
+            this.sread = sread;
+            this.swrite = swrite;
             await this.WorkAsync();
         }
     }
