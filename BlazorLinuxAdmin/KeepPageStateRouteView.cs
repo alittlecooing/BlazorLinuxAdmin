@@ -1,9 +1,8 @@
-﻿using System.Collections.Generic;
-using System.Reflection;
-using Microsoft.AspNetCore.Components.Rendering;
-
-namespace Microsoft.AspNetCore.Components   //use this namepace so copy/paste this code easier
+﻿namespace Microsoft.AspNetCore.Components   //use this namepace so copy/paste this code easier
 {
+    using System.Collections.Generic;
+    using System.Reflection;
+    using Microsoft.AspNetCore.Components.Rendering;
 
     public class KeepPageStateRouteView : RouteView
     {

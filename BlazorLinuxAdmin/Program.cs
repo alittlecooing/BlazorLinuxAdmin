@@ -1,45 +1,27 @@
-using System;
-using Microsoft.AspNetCore.Hosting;
-using Microsoft.Extensions.Hosting;
-
 namespace BlazorLinuxAdmin
 {
+    using System;
+    using Microsoft.AspNetCore.Hosting;
+    using Microsoft.Extensions.Hosting;
+
     public class Program
     {
-        private static string pname;
+        private static string _pname;
 
         public static void Main (string[] args)
         {
-            pname = System.Diagnostics.Process.GetCurrentProcess().ProcessName;
-            Console.WriteLine("Process Name : " + pname);
+            _pname = System.Diagnostics.Process.GetCurrentProcess().ProcessName;
+            Console.WriteLine("Process Name : " + _pname);
             Console.WriteLine("CommandLine : " + Environment.CommandLine);
             CreateHostBuilder(args).Build().Run();
         }
 
-        public static bool IsKestrelMode ()
-        {
-            if (pname == "w3wp" || pname == "iisexpress")//IIS or IIS Express
-            {
-                return false;
-            }
-
-            if (pname == "dotnet")  //run directly
-            {
-                return true;
-            }
-
-            if (Environment.OSVersion.Platform == PlatformID.Unix)
-            {
-                return true;
-            }
-
-            if (pname == typeof(Program).Assembly.GetName().Name)
-            {
-                return true;
-            }
-
-            return false;
-        }
+        public static bool IsKestrelMode () =>
+            _pname != "w3wp"
+            && _pname != "iisexpress"
+            && (_pname == "dotnet"
+                || Environment.OSVersion.Platform == PlatformID.Unix
+                || _pname == typeof(Program).Assembly.GetName().Name);
 
         public static IHostBuilder CreateHostBuilder (string[] args) =>
             Host.CreateDefaultBuilder(args)

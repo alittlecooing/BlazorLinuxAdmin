@@ -1,31 +1,21 @@
-﻿using System;
-using BlazorPlus;
-
-namespace BlazorLinuxAdmin
+﻿namespace BlazorLinuxAdmin
 {
+    using System;
+    using BlazorPlus;
+
     public class WebCustomizeSession : BlazorSession
     {
-        private Microsoft.AspNetCore.Hosting.IWebHostEnvironment _whe;
+        private readonly Microsoft.AspNetCore.Hosting.IWebHostEnvironment whe;
 
         public WebCustomizeSession (Microsoft.JSInterop.IJSRuntime jsr, Microsoft.AspNetCore.Components.NavigationManager nav
             , Microsoft.AspNetCore.Hosting.IWebHostEnvironment whe)
-            : base(jsr, nav)
-        {
-            this._whe = whe;
-        }
+            : base(jsr, nav) => this.whe = whe;
 
-        public override Type TypeGetUIDialogAlert (UIDialogOption option)
-        {
-            return typeof(CustomizeUI.UIDialogAlert);
-        }
-        public override Type TypeGetUIDialogConfirm (UIDialogOption option)
-        {
-            return typeof(CustomizeUI.UIDialogConfirm);
-        }
-        public override Type TypeGetUIDialogPrompt (UIDialogOption option)
-        {
-            return typeof(CustomizeUI.UIDialogPrompt);
-        }
+        public override Type TypeGetUIDialogAlert (UIDialogOption option) => typeof(CustomizeUI.UIDialogAlert);
+
+        public override Type TypeGetUIDialogConfirm (UIDialogOption option) => typeof(CustomizeUI.UIDialogConfirm);
+
+        public override Type TypeGetUIDialogPrompt (UIDialogOption option) => typeof(CustomizeUI.UIDialogPrompt);
 
         //protected override bool IsValidBrowserUniqueID(string uid)
         //{
