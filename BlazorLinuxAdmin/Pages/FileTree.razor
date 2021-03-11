@@ -1,5 +1,26 @@
 ﻿@page "/FileTree"
 
-<h1>FileTree</h1>
-
-<BlazorDomTree TagName="div" OnRootReady="Initialize_Bdt_Div1" style="padding:10px;border:solid 1px blue;min-height:202px;display:flex;" />
+<div>
+  <PageHeader Title="File Tree"/>
+  <Search AllowClear="true" @bind-Value="this.SearchKey" Placeholder="Search.." />
+  <Layout>
+    <Sider Width="400">
+      <Tree DataSource="this.MyDirectories"
+            SearchValue="@this.SearchKey"
+            TitleExpression="x=>x.DataItem.Name"
+            IconExpression="x=>x.DataItem.Icon"
+            ChildrenExpression="x => x.DataItem.Children"
+            IsLeafExpression='x => x.DataItem.Type.Equals("file")'
+            OnNodeLoadDelayAsync="this.OnLoadDirectoryAsync"
+            TItem="MyDirectory"></Tree>
+    </Sider>
+    <Layout Class="child-layout">
+      <Header>
+        12312
+      </Header>
+      <Content>
+        456465
+      </Content>
+    </Layout>
+  </Layout>
+</div>

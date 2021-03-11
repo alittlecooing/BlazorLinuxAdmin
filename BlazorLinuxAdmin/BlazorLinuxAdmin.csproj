@@ -25,4 +25,11 @@
     <PackageReference Include="System.Threading.ThreadPool" Version="4.3.0" />
   </ItemGroup>
 
+  <PropertyGroup Condition=" '$(SolutionDir)'==''">
+    <SolutionDir>../</SolutionDir>
+  </PropertyGroup>
+  
+  <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+    <Exec WorkingDirectory="$(SolutionDir)" Command="npm run gulp:less" />
+  </Target>
 </Project>
