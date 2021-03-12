@@ -1,5 +1,12 @@
-﻿<Header>@this.File.Name</Header>
-<Divider/>
+﻿<Header>@this.MyFile.Name</Header>
+<Divider />
 <Content>
-  @((MarkupString)FileContent())
+  @if (this.IsImage())
+  {
+    <img src="@this.GetImage()"/>
+  }
+  else
+  {
+    @((MarkupString)this.FileContent())
+  }
 </Content>

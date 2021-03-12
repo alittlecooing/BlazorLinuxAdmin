@@ -1,6 +1,7 @@
 ﻿namespace BlazorLinuxAdmin.Components
 {
     using System;
+    using System.Buffers.Text;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
@@ -14,22 +15,32 @@
         public MessageService MessageService { get; set; }
 
         [Parameter]
-        public FileInfo File { get; set; }
+        public FileInfo MyFile { get; set; }
+
+        private bool IsImage() => this.MyFile.FullName.EndsWith(".png")
+                || this.MyFile.FullName.EndsWith(".jpg")
+                || this.MyFile.FullName.EndsWith(".jpeg");
+
+        private string GetImage()
+        {
+            using FileStream fs = this.MyFile.OpenRead();
+            byte[] b = new byte[fs.Length];
+            fs.Read(b, 0, b.Length);
+            string str = "data:image/" + this.MyFile.Extension + ";base64," + Convert.ToBase64String(b);
+            return str;
+        }
 
         private string FileContent()
         {
             string fileContent = "";
-            using (FileStream fs = this.File.OpenRead())
+            using FileStream fs = this.MyFile.OpenRead();
+            byte[] b = new byte[1024];
+            UTF8Encoding temp = new UTF8Encoding(true);
+
+            while (fs.Read(b, 0, b.Length) > 0)
             {
-                byte[] b = new byte[1024];
-                UTF8Encoding temp = new UTF8Encoding(true);
-
-                while(fs.Read(b, 0, b.Length) > 0)
-                {
-                    fileContent += temp.GetString(b);
-                }
+                fileContent += temp.GetString(b);
             }
-
             return ContentFilter(fileContent);
         }
 
