@@ -12,12 +12,14 @@
             ChildrenExpression="x => x.DataItem.Children"
             IsLeafExpression='x => x.DataItem.Type.Equals("file")'
             OnNodeLoadDelayAsync="this.OnLoadDirectoryAsync"
-            Multiple="false"
             SelectedDataChanged="this.SelectedDataChanged"
             TItem="MyDirectory"></Tree>
     </Sider>
     <Layout Class="child-layout">
-      <FilePreview @bind-File="this.ActiveFile" />
+      @if (this.ActiveFile != null)
+      {
+        <FilePreview File="this.ActiveFile" />
+      }
     </Layout>
   </Layout>
 </div>

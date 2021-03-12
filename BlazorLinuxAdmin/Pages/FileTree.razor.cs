@@ -68,7 +68,7 @@
         {
             try
             {
-                if (File.Exists(directory.FullName))
+                if (File.Exists(directory?.FullName))
                 {
                     this.ActiveFile = new FileInfo(directory.FullName);
                 }

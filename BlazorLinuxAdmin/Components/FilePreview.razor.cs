@@ -6,10 +6,13 @@
     using System.Linq;
     using System.Text;
     using System.Threading.Tasks;
+    using AntDesign;
     using Microsoft.AspNetCore.Components;
 
     public partial class FilePreview
     {
+        public MessageService MessageService { get; set; }
+
         [Parameter]
         public FileInfo File { get; set; }
 
@@ -27,7 +30,29 @@
                 }
             }
 
-            return fileContent;
+            return ContentFilter(fileContent);
+        }
+
+        private string ContentFilter(string content)
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(content))
+                {
+                    return content;
+                }
+
+                return content.Replace("<", "&lt;")
+                    .Replace(">", "&gt;")
+                    .Replace(" ", "&nbsp;")
+                    .Replace("\r\n", "<br/>")
+                    .Replace("\n", "<br/>");
+            }
+            catch (Exception ex)
+            {
+                this.MessageService.Error(string.Format(ex.Message));
+                return content;
+            }
         }
     }
 }
