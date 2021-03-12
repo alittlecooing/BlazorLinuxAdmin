@@ -1,7 +1,7 @@
 ﻿@page "/FileTree"
 
 <div>
-  <PageHeader Title="File Tree"/>
+  <PageHeader Title="File Tree" />
   <Search AllowClear="true" @bind-Value="this.SearchKey" Placeholder="Search.." />
   <Layout>
     <Sider Width="400">
@@ -12,15 +12,12 @@
             ChildrenExpression="x => x.DataItem.Children"
             IsLeafExpression='x => x.DataItem.Type.Equals("file")'
             OnNodeLoadDelayAsync="this.OnLoadDirectoryAsync"
+            Multiple="false"
+            SelectedDataChanged="this.SelectedDataChanged"
             TItem="MyDirectory"></Tree>
     </Sider>
     <Layout Class="child-layout">
-      <Header >
-        12312
-      </Header>
-      <Content>
-        456465
-      </Content>
+      <FilePreview @bind-File="this.ActiveFile" />
     </Layout>
   </Layout>
 </div>

@@ -1,5 +1,6 @@
 ﻿namespace BlazorLinuxAdmin.Pages
 {
+    using System;
     using System.Collections.Generic;
     using System.IO;
     using System.Linq;
@@ -14,12 +15,14 @@
         [Parameter]
         public string RootFolder { get; set; }
 
-        private string SearchKey { get; set; }
-
-        private List<MyDirectory> MyDirectories { get; set; }
+        public FileInfo ActiveFile { get; set; }
 
         [Inject]
         private MessageService MessageService { get; set; }
+
+        private string SearchKey { get; set; }
+
+        private List<MyDirectory> MyDirectories { get; set; }
 
         protected override async Task OnInitializedAsync()
         {
@@ -57,6 +60,22 @@
             catch (System.UnauthorizedAccessException)
             {
                 this.MessageService.Error("没有权限访问该文件夹！");
+            }
+            return Task.CompletedTask;
+        }
+
+        private Task SelectedDataChanged(MyDirectory directory)
+        {
+            try
+            {
+                if (File.Exists(directory.FullName))
+                {
+                    this.ActiveFile = new FileInfo(directory.FullName);
+                }
+            }
+            catch (Exception ex)
+            {
+                this.MessageService.Error(ex.Message);
             }
             return Task.CompletedTask;
         }
