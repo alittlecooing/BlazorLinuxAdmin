@@ -30,6 +30,7 @@
   </PropertyGroup>
   
   <Target Name="PreBuild" BeforeTargets="PreBuildEvent">
+    <Exec WorkingDirectory="$(SolutionDir)" Command="npm install" />
     <Exec WorkingDirectory="$(SolutionDir)" Command="npm run gulp:less" />
   </Target>
 </Project>
