@@ -94,8 +94,6 @@
       List<string> cmds = new List<string>();
       cmds.Add("ls");
       cmds.Add("ps -ef|grep dotnet");
-      cmds.Add("cat /var/www/html/natapp-ssh.log");
-      cmds.Add("sudo service natapp-ssh restart");
 
       foreach (string cmd in cmds)
       {

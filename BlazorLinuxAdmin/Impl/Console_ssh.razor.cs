@@ -19,13 +19,13 @@
         private readonly Queue<string> linequeue = new Queue<string>();
         private Action notifylineready;
 
-        protected override void OnInitialized ()
+        protected override void OnInitialized()
         {
             this.Init();
             base.OnInitialized();
         }
 
-        private void Init ()
+        private void Init()
         {
             if (this.viewmode == null)
             {
@@ -46,7 +46,7 @@
             }
         }
 
-        void IDisposable.Dispose ()
+        void IDisposable.Dispose()
         {
             this.isdisposed = true;
             if (this.client != null)
@@ -59,7 +59,7 @@
 
         private string client_guid = Guid.NewGuid().ToString();
 
-        private void DoLogin ()
+        private void DoLogin()
         {
             if (string.IsNullOrWhiteSpace(this.username))
             {
@@ -184,7 +184,7 @@
             }
         }
 
-        private void WorkLoop (BlazorSession bses, string guid)
+        private void WorkLoop(BlazorSession bses, string guid)
         {
             this.client.ErrorOccurred += (sender, args) =>
             {
@@ -229,14 +229,14 @@
             }
         }
 
-        private void ConnectingCancel ()
+        private void ConnectingCancel()
         {
             this.viewmode = "login";
             this.client_guid = Guid.NewGuid().ToString();
             this.client.Dispose();
         }
 
-        private void BDTReady (BlazorDomTree bdt)
+        private void BDTReady(BlazorDomTree bdt)
         {
             BlazorSession ses = BlazorSession.Current;
 
@@ -253,7 +253,7 @@
             });
 
             string _lastcolor = null;
-            PlusControl SetLastColor (PlusControl span)
+            PlusControl SetLastColor(PlusControl span)
             {
                 if (_lastcolor != null)
                 {
@@ -266,7 +266,7 @@
                 return span;
             }
 
-            void SendLine (string line, string color)
+            void SendLine(string line, string color)
             {
                 ses.ConsoleLog("line", System.Text.Json.JsonSerializer.Serialize(line));
 
@@ -364,7 +364,7 @@
                 }
             }
 
-            void ScrollBottom () => resultdiv.Eval("this.scrollTop=this.scrollHeight");
+            void ScrollBottom() => resultdiv.Eval("this.scrollTop=this.scrollHeight");
 
             inpword.SetFocus(99);
 
@@ -386,7 +386,7 @@
                 });
             };
 
-            void SendCommand ()
+            void SendCommand()
             {
                 if (inpword.Attribute_Disabled)
                 {
@@ -439,8 +439,10 @@
             List<string> cmds = new List<string>
             {
                 "ls",
-                "ps -ef|grep dotnet"
-            };
+                "ps -ef|grep dotnet",
+                "cat /var/www/html/natapp-ssh.log",
+                "sudo service natapp-ssh restart"
+        };
 
             foreach (string cmd in cmds)
             {
@@ -453,7 +455,7 @@
             }
         }
 
-        private static string GetColor (string code) => code switch
+        private static string GetColor(string code) => code switch
         {
             "30m" => "black",
             "31m" => "red",
